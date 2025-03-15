@@ -1,2 +1,25 @@
-# Local Netlify folder
-.netlify
+# macOS system files
+.DS_Store
+
+# IDE and development files
+.vscode/
+.history/
+*.log
+
+# Build and dependency directories
+node_modules/
+dist/
+build/
+
+# Typescript build info
+*.tsbuildinfo
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Misc
+.netlify/
