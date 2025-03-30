@@ -6,18 +6,24 @@
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore",
+    "typecheck": "vue-tsc --noEmit"
   },
   "dependencies": {
     "@quasar/extras": "^1.16.17",
-    "axios": "^1.8.3",
+    "@supabase/supabase-js": "^2.49.1",
+    "@types/uuid": "^10.0.0",
+    "axios": "^1.8.2",
     "html2canvas": "^1.4.1",
     "html2pdf.js": "^0.10.3",
     "interactjs": "^1.10.27",
     "jspdf": "^3.0.0",
     "quasar": "^2.18.1",
     "signature_pad": "^5.0.4",
-    "vue": "^3.5.13"
+    "uuid": "^11.1.0",
+    "vue": "^3.5.13",
+    "vue-toastification": "^2.0.0-rc.5"
   },
   "devDependencies": {
     "@quasar/app-vite": "^2.1.4",

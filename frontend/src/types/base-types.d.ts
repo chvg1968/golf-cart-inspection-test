@@ -50,6 +50,8 @@ export type Properties = {
   name: string;
   type: string;
   required: boolean;
+  cartNumber?: string;
+  diagramType?: string;
 };
 
 export type Damage = {

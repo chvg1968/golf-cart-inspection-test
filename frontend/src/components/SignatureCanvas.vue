@@ -7,6 +7,10 @@
       @update:model-value="$emit('update:termsAccepted', $event)"
     />
 
+    <p>
+      I hereby certify that the golf cart described above was granted to me on the date mentioned, and I acknowledge the stated damages. Any additional damages not listed are new and are considered my responsibility.
+    </p>
+
     <div class="signature-container">
       <canvas
         ref="signaturePad"
@@ -24,7 +28,6 @@
           class="q-mr-sm"
         />
       </slot>
-      <!-- Botón de Download PDF eliminado -->
     </div>
   </div>
 </template>
@@ -46,7 +49,6 @@ export default {
   emits: [
     'update:termsAccepted', 
     'signature-change'
-    // Eliminado 'download-pdf'
   ],
   
   setup(props, { emit }) {
@@ -118,5 +120,11 @@ export default {
   width: 100%;
   height: 150px;
   border-radius: 4px;
+}
+
+.pdf-buttons {
+  display: flex;
+  justify-content: center;
+  margin-top: 15px;
 }
 </style>

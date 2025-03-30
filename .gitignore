@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # macOS system files
 .DS_Store
 
@@ -23,3 +24,10 @@ build/
 
 # Misc
 .netlify/
+=======
+# Local Netlify folder
+.netlify
+.env
+.env.local
+
+>>>>>>> dev
