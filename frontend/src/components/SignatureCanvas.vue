@@ -1,11 +1,5 @@
 <template>
   <div class="signature-section">
-    <q-checkbox
-      :model-value="termsAccepted"
-      label="I accept the terms and conditions of the inspection"
-      class="q-mb-md"
-      @update:model-value="$emit('update:termsAccepted', $event)"
-    />
 
     <p>
       I hereby certify that the golf cart described above was granted to me on the date mentioned, and I acknowledge the stated damages. Any additional damages not listed are new and are considered my responsibility.

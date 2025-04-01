@@ -1,103 +1,106 @@
 <template>
-  <div class="q-pa-md">
-    <!-- Logo y Título -->
-    <div class="col-12 text-center q-mb-md header-section">
-      <img 
-        src="../assets/images/logo.png" 
-        alt="Company Logo" 
-        class="company-logo"
-      />
-      <h1 class="page-title">Golf Cart Inspection</h1>
-    </div>
+  <q-page class="q-pa-md">
+    <q-form 
+      ref="inspectionForm" 
+      @submit.prevent="submitForm"
+      class="form-container"
+    >
+      <div class="row q-col-gutter-md">
+        <!-- Logo y Título -->
+        <div class="col-12 text-center q-mb-md header-section">
+          <img 
+            src="../assets/images/logo.png" 
+            alt="Company Logo" 
+            class="company-logo"
+          />
+          <h1 class="page-title">Golf Cart Inspection</h1>
+        </div>
 
-    <q-form ref="formContainerRef" @submit.prevent="submitInspectionForm">
-      <!-- Guest Information Section -->
-      <div class="col-12">
-        <q-card flat bordered>
-          <q-card-section>
-            <div class="text-h6">Guest Information</div>
-            <div class="column q-col-gutter-md">
-              <div class="col-12">
-                <q-input 
-                  v-model="guestInfo.name"
-                  label="Guest Name *" 
-                  outlined 
-                  required
-                  input-class="custom-input-text"
-                />
-              </div>
-              <div class="col-12">
-                <q-input 
-                  v-model="guestInfo.email"
-                  type="email"
-                  label="Guest Email *" 
-                  outlined 
-                  required
-                  input-class="custom-input-text"
-                />
-              </div>
-              <div class="col-12">
-                <q-input 
-                  v-model="guestInfo.phone"
-                  type="tel"
-                  label="Phone Number *" 
-                  outlined 
-                  required
-                  input-class="custom-input-text"
-                  :rules="[
-                    val => val && val.length >= 10 || 'Please enter a valid phone number'
-                  ]"
-                />
-              </div>
-              <div class="col-12">
-                <q-input 
-                  v-model="guestInfo.inspectionDate" 
-                  type="date" 
-                  label="Inspection Date" 
-                  outlined 
-                  required
-                  style="width: 100%;"
-                  input-class="custom-input-text"
-                />
-              </div>
-            </div>
-          </q-card-section>
-        </q-card>
-      </div>
-
-      <!-- Property and Cart Type Section -->
-      <div class="col-12">
-        <q-card flat bordered>
-          <q-card-section>
-            <div class="text-h6">Property and Cart Type</div>
-            <div class="column q-col-gutter-md">
+        <!-- Guest Information Section -->
+        <div class="col-12">
+          <q-card flat bordered>
+            <q-card-section>
+              <div class="text-h6">Guest Information</div>
+              <div class="column q-col-gutter-md">
                 <div class="col-12">
-                  <q-select 
-                    v-model="selectedProperty"
-                    :options="propertyOptions"
-                    option-label="label"
-                    option-value="id"
-                    label="Property *"
-                    outlined
-                    required
-                    input-class="custom-input-text"
-                  />
-                </div>
-                <div class="col-12">
-                  <q-select 
-                    v-model="selectedCartType" 
-                    :options="cartTypeOptions" 
-                    label="Cart Type" 
+                  <q-input 
+                    v-model="guestInfo.name" 
+                    label="Guest Name" 
                     outlined 
+                    required
+                    style="width: 100%;"
                     input-class="custom-input-text"
-                    @update:model-value="onCartTypeSelect($event)"
                   />
                 </div>
                 <div class="col-12">
                   <q-input 
-                    v-model="cartNumber"
+                    v-model="guestInfo.email" 
+                    label="Guest Email" 
+                    type="email" 
+                    outlined 
+                    required
+                    style="width: 100%;"
+                    input-class="custom-input-text"
+                    :rules="[val => val && val.includes('@') || 'Invalid email']"
+                  />
+                </div>
+                <div class="col-12">
+                  <q-input 
+                    v-model="guestInfo.phone" 
+                    label="Guest Phone" 
+                    outlined 
+                    required
+                    style="width: 100%;"
+                    input-class="custom-input-text"
+                    :rules="[
+                      val => val && val.length >= 10 || 'Please enter a valid phone number'
+                    ]"
+                  />
+                </div>
+              </div>
+            </q-card-section>
+          </q-card>
+        </div>
+
+        <!-- Property and Cart Type Section -->
+        <div class="col-12">
+          <q-card flat bordered>
+            <q-card-section>
+              <div class="text-h6">Property and Cart Type</div>
+              <div class="column q-col-gutter-md">
+                <div class="col-12">
+                  <q-select 
+                    v-model="selectedProperty"
+                    :options="propertyOptions"
+                    option-label="name"
+                    option-value="id"
+                    label="Property *"
+                    outlined
+                    dense
+                    :rules="[val => !!val || 'Property is required']"
+                    @update:model-value="onPropertySelect"
+                  />
+                </div>
+                <div class="col-12">
+                  <q-select 
+                    v-model="selectedCartType"
+                    :options="cartTypeOptions"
+                    option-label="name"
+                    option-value="name"
+                    label="Cart Type *"
+                    outlined
+                    dense
+                    :rules="[val => !!val || 'Cart Type is required']"
+                    @update:model-value="onCartTypeSelect"
+                  />
+                </div>
+                <div class="col-12">
+                  <q-input 
+                    v-model="cartNumber" 
                     label="Cart Number" 
                     outlined 
+                    readonly
+                    style="width: 100%;"
                     input-class="custom-input-text"
                   />
                 </div>
@@ -106,12 +109,14 @@
           </q-card>
         </div>
 
-        <!-- Diagram Annotation Section -->
+        <!-- Sección de diagrama con selección condicional -->
         <div class="row justify-center q-mt-md">
           <div class="col-12 text-center">
-            <CartDiagramAnnotations 
-              :cart-type="cartTypeForDiagram"
-              @drawing-created="annotatedDiagramImage = $event"
+            <cart-diagram-annotations
+              :cart-type="selectedCartType.name"
+              :diagram-path="selectedCartType.diagramPath"
+              :diagram-type="selectedProperty.diagramType"
+              @drawing-created="handleDrawingCreated"
             />
           </div>
         </div>
@@ -119,10 +124,13 @@
         <!-- Guest Observations -->
         <div class="col-12 col-md-6 offset-md-3">
           <q-input 
-            v-model="guestObservations"
+            v-model="guestObservations" 
             label="Guest Observations" 
-            type="textarea"
-            outlined 
+            type="textarea" 
+            outlined
+            :maxlength="200"
+            hint="Maximum 200 characters"
+            rows="3"
             input-class="custom-input-text"
           />
         </div>
@@ -134,246 +142,369 @@
               <div class="text-h6">Terms and Signature</div>
               <SignatureCanvas 
                 v-model:terms-accepted="termsAccepted"
+                @signature-change="signature = $event"
               />
             </q-card-section>
           </q-card>
         </div>
 
-        <!-- PDF Generation Section -->
-        <div class="row justify-center q-mt-md">
-          <PDFGenerator 
-            ref="pdfGeneratorRef" 
-            :form-container="formContainerRef" 
-            :guest-information="guestInfo"
-            :selected-property="selectedProperty"
-            :annotated-diagram-image="annotatedDiagramImage"
-          />
+        <!-- PDF Generator -->
+        <pdf-generator
+          ref="pdfGeneratorRef"
+          :selected-property="selectedProperty"
+          :selected-cart-type="selectedCartType"
+          :guest-info="guestInfo"
+          :cart-number="cartNumber"
+          :annotated-diagram-image="annotatedDiagramImage"
+          @pdf-generated="onPDFGenerated"
+          @pdf-error="onPDFError"
+        />
 
-          <!-- PDF Download Button (Single Button) -->
-          <div class="col-12 text-center q-mt-md">
-            <q-btn 
-              label="Download PDF" 
-              color="primary" 
-              @click="handlePDFGeneration"
-              :disable="!canDownloadPDF"
-            />
-            <q-btn 
-              label="Submit Inspection" 
-              color="secondary" 
-              class="q-ml-md"
-              @click="submitInspectionForm"
-              :disable="!isFormValid"
-            />
-          </div>
+        <!-- PDF Download Button (Single Button) -->
+        <div class="col-12 text-center pdf-buttons" >
+          <q-btn 
+            label="Download PDF" 
+            color="primary" 
+            @click="downloadPDF"
+            :disable="!canDownloadPDF"
+          />
+          <q-btn 
+            label="Submit Inspection Form" 
+            color="primary" 
+            type="submit"
+            :disable="!canDownloadPDF"
+          />
         </div>
+      </div>
     </q-form>
-  </div>
+  </q-page>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
-import { useQuasar } from 'quasar'
+import { ref, computed, onMounted, watch } from 'vue'
+import { 
+  Notify, 
+  Dialog, 
+  useQuasar 
+} from 'quasar'
 
-import SignatureCanvas from '@/components/SignatureCanvas.vue'
 import PDFGenerator from '@/components/PDFGenerator.vue'
+import SignatureCanvas from '@/components/SignatureCanvas.vue'
 import CartDiagramAnnotations from '@/components/CartDiagramAnnotations.vue'
 
-import { sendInspectionLink } from '@/api/sendInvitationEmail'
-import { PROPERTIES, GOLF_CART_TYPES } from '@/constants'
-
-import { 
+import {
   Properties, 
+  PropertyOption,
   CartTypeOption, 
-  GuestInfo
-} from '@/types/new-inspection-types'
+  GuestInfo,
+  PDFData,
+  EMPTY_GUEST_INFO,
+  EMPTY_PROPERTY,
+  EMPTY_CART_TYPE
+} from '@/types/base-types'
 
-// Inicializar Quasar
-const $q = useQuasar()
+import { PROPERTIES, GOLF_CART_TYPES } from '@/constants'
+import { fourSeaterImage, sixSeaterImage } from '@/assets/images'
 
-// Estado de información de invitado
-const guestInfo = ref<GuestInfo>({
-  name: '',
-  email: '',
-  phone: '',
-  date: new Date().toISOString().split('T')[0],
-  cartNumber: '',
-  inspectionDate: new Date().toISOString().split('T')[0]
-})
+// Configuración de Quasar
+const quasar = useQuasar()
 
-// Propiedades y tipos de carrito
-const propertyOptions = PROPERTIES.map(prop => ({
+// Debug: Imprimir propiedades para verificación
+console.log('Propiedades definidas:', PROPERTIES)
+console.log('Tipos de carrito definidos:', GOLF_CART_TYPES)
+
+// Convertir PROPERTIES a un formato adecuado para el selector
+const propertyOptions = ref<PropertyOption[]>(PROPERTIES.map(prop => ({
   ...prop,
   label: prop.name,
-  value: prop.id.toString(),
-}))
+  value: prop.id,
+  diagramPath: prop.diagramType?.includes('6seater') ? sixSeaterImage : fourSeaterImage
+})))
 
-// Definición de tipos de carrito con rutas de imagen resueltas
-const cartTypeOptions = GOLF_CART_TYPES.map(cartType => ({
-  ...cartType,
-  diagramPath: cartType.label.includes('6') ? '../assets/images/6seater.jpg' : '../assets/images/4seater.jpg'
-}))
+// Inicializar referencias con valores por defecto
+const selectedProperty = ref<Properties>(EMPTY_PROPERTY)
+const selectedCartType = ref<CartTypeOption>(EMPTY_CART_TYPE)
+const guestInfo = ref<GuestInfo>(EMPTY_GUEST_INFO)
 
-// Definir un valor por defecto para el tipo de carrito
-const defaultCartType: CartTypeOption = {
-  id: 'default',
-  name: 'Default Cart',
-  label: '4 Seater',
-  value: '4',
-  diagramPath: '../assets/images/4seater.jpg',
-}
+// Usar tipos de carrito de constantes
+const cartTypeOptions = ref<CartTypeOption[]>(GOLF_CART_TYPES)
 
-const selectedProperty = ref<Properties | null>(null)
-const selectedCartType = ref<CartTypeOption | null>(null)
-const cartNumber = ref('')
+// Referencias adicionales
+const cartNumber = ref<string>('')
+const guestObservations = ref<string>('')
+const termsAccepted = ref<boolean>(false)
+const signature = ref<string | null>(null)
+const annotatedDiagramImage = ref<string | undefined>(undefined)
 
-// Estado de anotaciones y observaciones
-const annotatedDiagramImage = ref<string | null>(null)
-const guestObservations = ref('')
-
-// Estado de términos y firma
-const termsAccepted = ref(false)
-
-// Referencias para PDF y formulario
+// Referencia al componente PDFGenerator
 const pdfGeneratorRef = ref<InstanceType<typeof PDFGenerator> | null>(null)
-const formContainerRef = ref<HTMLElement>(document.createElement('div'))
 
-// Computed para validar campos de Guest Information
-const isGuestInfoComplete = computed(() => {
-  return !!(
-    guestInfo.value.name.trim() && 
-    guestInfo.value.email.trim() && 
-    guestInfo.value.phone.trim() && 
-    guestInfo.value.inspectionDate
-  )
-})
-
-// Computed para validar selección de propiedad
-const isPropertySelected = computed(() => {
-  return !!selectedProperty.value
-})
-
-// Computed para habilitar descarga de PDF
-const canDownloadPDF = computed(() => {
-  return isGuestInfoComplete.value && isPropertySelected.value
-})
-
-// Computed para validar formulario completo
-const isFormValid = computed(() => {
-  return (
-    isGuestInfoComplete.value && 
-    isPropertySelected.value && 
-    termsAccepted.value
-  )
-})
-
-// Utilidad centralizada para resolución de imágenes
-const ImageResolver = {
-  resolveImagePath(cartType: CartTypeOption): string {
-    return cartType.label.includes('6') ? '../assets/images/6seater.jpg' : '../assets/images/4seater.jpg'
-  }
-}
-
-// Asegurar que cart-type siempre tenga un valor de cadena
-const cartTypeForDiagram = computed(() => {
-  return selectedCartType.value?.value || ''
-})
-
-// Wrapper for generatePDF to handle null case
-const handlePDFGeneration = () => {
-  if (pdfGeneratorRef.value) {
-    pdfGeneratorRef.value.generatePDF()
-  }
-}
-
-async function submitInspectionForm() {
-  try {
-    // Validaciones
-    if (!isFormValid.value) {
-      $q.notify({
-        type: 'negative',
-        message: 'Please complete all required fields',
-        position: 'top'
-      })
-      return
-    }
-
-    // Enviar enlace de inspección
-    const processedGuestInfo: GuestInfo = {
-      ...guestInfo.value,
-      date: guestInfo.value.inspectionDate || new Date().toISOString().split('T')[0]
-    }
-
-    await sendInspectionLink(
-      processedGuestInfo, 
-      selectedProperty.value?.id || '', 
-      selectedCartType.value?.name || '',
-      undefined // Opcional: supabaseUser.value?.id
-    )
-
-    $q.notify({
-      type: 'positive',
-      message: 'Inspection link sent successfully',
-      position: 'top'
-    })
-
-  } catch (error: unknown) {
-    console.error('Error submitting inspection:', error)
-    $q.notify({
-      type: 'negative',
-      message: error instanceof Error ? error.message : 'Failed to submit inspection',
-      position: 'top'
-    })
-  }
-}
-
-// Observador para actualizar Cart Number, Cart Type y Diagrama cuando se selecciona una propiedad
-watch(selectedProperty, (newProperty) => {
-  if (newProperty) {
-    const selectedProp = propertyOptions.find(prop => prop.id === newProperty.id)
-    if (selectedProp) {
-      // Actualizar Cart Number
-      guestInfo.value.cartNumber = selectedProp.cartNumber ?? ''
-      cartNumber.value = selectedProp.cartNumber ?? ''
-      
-      // Determinar el tipo de carrito basado en la propiedad diagramType
-      const cartTypeMatch = cartTypeOptions.find(type => 
-        selectedProp.diagramType?.toLowerCase().includes(type.label.toLowerCase().replace(' seaters', ''))
+// Método para manejar selección de propiedad
+const onPropertySelect = (selectedValue: string | PropertyOption) => {
+  console.log('Valor seleccionado:', selectedValue)
+  
+  // Determinar la propiedad seleccionada
+  const selectedProp = typeof selectedValue === 'string'
+    ? propertyOptions.value.find(prop => 
+        prop.id === selectedValue || 
+        prop.name === selectedValue
       )
-      
-      // Usar el tipo de carrito encontrado o el valor por defecto
-      if (cartTypeMatch) {
-        selectedCartType.value = {
-          id: cartTypeMatch.id,
-          name: cartTypeMatch.name,
-          label: cartTypeMatch.label,
-          value: cartTypeMatch.value,
-          diagramPath: ImageResolver.resolveImagePath(cartTypeMatch)
-        }
-      } else {
-        selectedCartType.value = defaultCartType
+    : selectedValue
+
+  console.log('Propiedad encontrada:', selectedProp)
+  
+  if (selectedProp) {
+    // Establecer propiedad seleccionada
+    selectedProperty.value = {
+      id: selectedProp.id,
+      name: selectedProp.name,
+      type: selectedProp.type,
+      required: selectedProp.required,
+      cartNumber: selectedProp.cartNumber,
+      diagramType: selectedProp.diagramType || ''
+    }
+    
+    console.log('Detalles de propiedad:', selectedProperty.value)
+    
+    // Determinar tipo de carrito basado en el tipo de diagrama de la propiedad
+    const cartTypeMatch = cartTypeOptions.value.find(type => 
+      (selectedProp.diagramType?.includes('6seater') && type.name.includes('6')) ||
+      (selectedProp.diagramType?.includes('4seater') && type.name.includes('4')) ||
+      selectedProp.name.toLowerCase().includes(type.name.toLowerCase().replace(' ', ''))
+    )
+    
+    console.log('Tipo de carrito encontrado:', cartTypeMatch)
+    
+    if (cartTypeMatch) {
+      // Establecer tipo de carrito
+      selectedCartType.value = {
+        ...cartTypeMatch,
+        diagramPath: selectedProp.diagramType?.includes('6seater') ? sixSeaterImage : fourSeaterImage
       }
     } else {
-      selectedCartType.value = defaultCartType
+      // Usar primer tipo de carrito si no hay coincidencia
+      selectedCartType.value = cartTypeOptions.value[0]
     }
-  }
-}, { immediate: true })
-
-// Método para manejar la selección de Cart Type
-const onCartTypeSelect = (value: any | null) => {
-  if (value) {
-    const diagramPath = value.diagramPath || '../assets/images/4seater.jpg'
     
-    selectedCartType.value = {
-      id: value.id,
-      name: value.name,
-      label: value.label,
-      value: value.value,
-      diagramPath: diagramPath
-    }
+    console.log('Tipo de carrito seleccionado:', selectedCartType.value)
+    
+    // Establecer número de carrito
+    cartNumber.value = selectedProp.cartNumber || ''
+    
+    console.log('Número de carrito:', cartNumber.value)
   } else {
-    selectedCartType.value = defaultCartType
+    console.warn('No se encontró la propiedad:', selectedValue)
   }
 }
+
+// Watcher para depuración
+watch([selectedProperty, selectedCartType], ([prop, cart]) => {
+  console.log('Cambio en propiedad o carrito:', { prop, cart })
+})
+
+// Método para manejar selección de tipo de carrito
+const onCartTypeSelect = (selectedValue: string) => {
+  const cartTypeMatch = cartTypeOptions.value.find(type => type.name === selectedValue)
+  if (cartTypeMatch) {
+    selectedCartType.value = {
+      ...cartTypeMatch,
+      diagramPath: cartTypeMatch.name.includes('6') ? sixSeaterImage : fourSeaterImage
+    }
+  }
+}
+
+// Establecer valor por defecto al montar el componente
+onMounted(() => {
+  // Seleccionar la primera propiedad por defecto
+  if (propertyOptions.value.length > 0) {
+    const defaultProperty = propertyOptions.value.find(prop => prop.id === 'rental_6_passenger_150') || propertyOptions.value[0]
+    onPropertySelect(defaultProperty)
+  }
+})
+
+// Método para manejar dibujo creado
+const handleDrawingCreated = (drawingData: { drawing: string, cartType: string }) => {
+  annotatedDiagramImage.value = drawingData.drawing
+}
+
+// Validación de formulario
+const isFormValid = computed(() => {
+  // Validar información de invitado
+  const isGuestInfoComplete = !!(
+    guestInfo.value.name?.trim() &&
+    guestInfo.value.email?.trim() &&
+    guestInfo.value.email?.includes('@') &&
+    guestInfo.value.phone?.trim()
+  )
+
+  // Validar propiedad seleccionada
+  const isPropertySelected = !!selectedProperty.value?.id
+
+  // Validar diagrama (al menos una marca)
+  const hasDiagramAnnotations = !!annotatedDiagramImage.value
+
+  // Retornar true solo si todas las condiciones se cumplen
+  return isGuestInfoComplete && 
+         isPropertySelected && 
+         hasDiagramAnnotations
+})
+
+// Método para validar descarga de PDF
+const canDownloadPDF = computed(() => {
+  return isFormValid.value
+})
+
+// Método para descargar PDF
+const downloadPDF = async () => {
+  try {
+    if (!pdfGeneratorRef.value) return
+
+    const pdfData: PDFData = {
+      guestInfo: {
+        name: guestInfo.value.name || '',
+        email: guestInfo.value.email || '',
+        phone: guestInfo.value.phone || ''
+      },
+      selectedProperty: selectedProperty.value,
+      selectedCartType: selectedCartType.value,
+      cartNumber: cartNumber.value,
+      annotatedDiagramImage: annotatedDiagramImage.value || '',
+      guestObservations: guestObservations.value,
+      signature: signature.value,
+      termsAccepted: termsAccepted.value
+    }
+
+    const pdfBlob = await pdfGeneratorRef.value.generatePDF(pdfData)
+    
+    // Generar nombre de archivo personalizado
+    const fileName = `golf_cart_${cartNumber.value}_${selectedProperty.value?.name}_${guestInfo.value.name}.pdf`
+    
+    // Crear un enlace de descarga
+    const link = document.createElement('a')
+    const pdfUrl = URL.createObjectURL(pdfBlob)
+    
+    link.href = pdfUrl
+    link.download = fileName
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    
+    // Limpiar el objeto URL
+    URL.revokeObjectURL(pdfUrl)
+    
+    // Notificar éxito
+    Notify.create({
+      type: 'positive',
+      message: 'PDF generado y descargado exitosamente',
+      position: 'top'
+    })
+  } catch (error) {
+    console.error('Error generando PDF:', error)
+    Notify.create({
+      type: 'negative',
+      message: 'Error al generar PDF. Por favor, inténtelo de nuevo.',
+      position: 'top'
+    })
+  }
+}
+
+// Método para manejar PDF generado
+const onPDFGenerated = (pdfBlob: Blob) => {
+  console.log('PDF generado', pdfBlob)
+}
+
+// Método para manejar error de PDF
+const onPDFError = (error: Error) => {
+  console.error('Error en PDF:', error)
+  Notify.create({
+    type: 'negative',
+    message: `Error en PDF: ${error.message}`,
+    position: 'top'
+  })
+}
+
+// Método para enviar formulario de inspección
+const submitForm = async () => {
+  if (!isFormValid.value) {
+    Notify.create({
+      type: 'negative',
+      message: 'Por favor complete todos los campos requeridos',
+      position: 'top'
+    })
+    return
+  }
+
+  try {
+    // Generar datos de PDF
+    const pdfData: PDFData = {
+      guestInfo: guestInfo.value,
+      selectedProperty: selectedProperty.value,
+      selectedCartType: selectedCartType.value,
+      cartNumber: cartNumber.value,
+      annotatedDiagram: annotatedDiagramImage.value || undefined
+    }
+
+    // Generar PDF
+    const pdfBlob = await pdfGeneratorRef.value?.generatePDF(pdfData)
+    
+    if (pdfBlob) {
+      // Método de descarga específico para iOS
+      const downloadPDF = () => {
+        const link = document.createElement('a')
+        link.href = URL.createObjectURL(pdfBlob)
+        link.download = `Inspeccion_${selectedProperty.value.name}_${new Date().toISOString().split('T')[0]}.pdf`
+        
+        // Para iOS, crear un evento de clic sintético
+        const event = new MouseEvent('click', {
+          view: window,
+          bubbles: true,
+          cancelable: true
+        })
+        link.dispatchEvent(event)
+      }
+
+      // Verificar si es iOS
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream
+
+      if (isIOS) {
+        // Para iOS, usar un modal o interacción del usuario
+        Dialog.create({
+          title: 'Descargar PDF',
+          message: '¿Desea descargar el PDF de inspección?',
+          cancel: true,
+          persistent: true
+        }).onOk(() => {
+          downloadPDF()
+        })
+      } else {
+        // Para otros navegadores, descarga directa
+        downloadPDF()
+      }
+
+      // Notificación de éxito
+      Notify.create({
+        type: 'positive',
+        message: 'Inspección generada exitosamente',
+        position: 'top'
+      })
+    }
+  } catch (error) {
+    console.error('Error al generar PDF:', error)
+    Notify.create({
+      type: 'negative',
+      message: 'Error al generar la inspección',
+      position: 'top'
+    })
+  }
+}
+
+// Exponer métodos para pruebas o acceso externo
+defineExpose({
+  submitForm,
+  downloadPDF,
+  onPDFGenerated,
+  onPDFError
+})
 </script>
 
 <style scoped>

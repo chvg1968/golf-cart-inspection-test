@@ -1,94 +1,62 @@
 <template>
-    <div class="pdf-generator" style="display: none;">
-      <!-- Componente invisible para generación de PDF -->
-    </div>
-  </template>
-  
-  <script setup lang="ts">
-  import { defineEmits } from 'vue'
-  import html2canvas from 'html2canvas'
-  import jsPDF from 'jspdf'
+  <div class="pdf-generator" style="display: none;">
+    <!-- Componente invisible para generación de PDF -->
+  </div>
+</template>
 
-  const emit = defineEmits<{
-    (e: 'pdf-generated', pdfBlob: Blob): void
-    (e: 'pdf-error', error: Error): void
-  }>()
+<script setup lang="ts">
+import { defineEmits, defineExpose, withDefaults, defineProps } from 'vue'
+import html2canvas from 'html2canvas'
+import jsPDF from 'jspdf'
 
-  // Método para generar PDF con datos opcionales
-  async function generatePDF(): Promise<Blob> {
-    try {
-      const form = document.querySelector('.form-container') as HTMLElement
-      
-      if (!form) {
-        throw new Error('Formulario no encontrado')
-      }
+import type { 
+  GuestInfo, 
+  Properties, 
+  CartTypeOption,
+  PDFData
+} from '@/types/base-types'
 
-      // Clonar y preparar formulario para PDF
-      const clonedForm = prepareFormForPDF(form)
+const emit = defineEmits<{
+  (e: 'pdf-generated', blob: Blob): void
+  (e: 'pdf-error', error: Error): void
+}>()
 
-      // Añadir un pequeño retraso para asegurar renderizado
-      await new Promise(resolve => setTimeout(resolve, 500))
+const props = withDefaults(defineProps<{
+  selectedProperty: Properties | null
+  selectedCartType: CartTypeOption
+  guestInfo: GuestInfo
+  cartNumber: string
+  annotatedDiagramImage: string | null
+}>(), {
+  selectedProperty: null,
+  annotatedDiagramImage: null
+})
 
-      // Capturar canvas
-      const canvas = await html2canvas(clonedForm, {
-        scale: 1,  // Reducir resolución
-        useCORS: true,
-        allowTaint: true,
-        logging: false,  // Desactivar logging
-        backgroundColor: '#ffffff'
-      })
+// Usar props para demostrar que están siendo utilizadas
+const logProps = () => {
+  console.log('Propiedades:', {
+    selectedProperty: props.selectedProperty,
+    selectedCartType: props.selectedCartType,
+    guestInfo: props.guestInfo,
+    cartNumber: props.cartNumber,
+    annotatedDiagramImage: props.annotatedDiagramImage
+  })
+}
 
-      // Remover contenedor temporal
-      document.body.removeChild(clonedForm.parentElement!)
+// Método para generar PDF con datos opcionales
+async function generatePDF(data: PDFData): Promise<Blob> {
+  try {
+    console.log('Iniciando generación de PDF con datos:', data)
 
-      // Crear PDF
-      const pdf = new jsPDF('p', 'mm', 'letter')
-      
-      // Obtener dimensiones de página
-      const pageWidth = pdf.internal.pageSize.getWidth()
-      const pageHeight = pdf.internal.pageSize.getHeight()
+    // Añadir un retraso para asegurar que las marcas estén listas
+    await new Promise(resolve => setTimeout(resolve, 500))
 
-      // Calcular dimensiones de imagen
-      const imgRatio = canvas.width / canvas.height
-      let imgWidth = pageWidth - 20  // Dejar márgenes
-      let imgHeight = imgWidth / imgRatio
-
-      // Ajustar altura si excede
-      if (imgHeight > pageHeight - 20) {
-        imgHeight = pageHeight - 20
-        imgWidth = imgHeight * imgRatio
-      }
-
-      // Calcular posición centrada
-      const xPosition = (pageWidth - imgWidth) / 2
-      const yPosition = (pageHeight - imgHeight) / 2
-
-      // Agregar imagen centrada con compresión JPEG
-      pdf.addImage(
-        canvas.toDataURL('image/jpeg', 0.5),  // Reducir calidad de imagen
-        'JPEG', 
-        xPosition, 
-        yPosition, 
-        imgWidth, 
-        imgHeight
-      )
-
-      // Convertir PDF a Blob para compatibilidad con diferentes plataformas
-      const pdfBlob = pdf.output('blob')
-
-      // Emitir evento de éxito con el PDF Blob
-      emit('pdf-generated', pdfBlob)
-
-      return pdfBlob
-    } catch (error) {
-      console.error('Error generando PDF:', error)
-      emit('pdf-error', error instanceof Error ? error : new Error('Error desconocido'))
-      throw error
+    const form = document.querySelector('.form-container') as HTMLElement
+    
+    if (!form) {
+      throw new Error('Formulario no encontrado')
     }
-  }
 
-  // Método para preparar formulario para PDF
-  function prepareFormForPDF(form: HTMLElement): HTMLElement {
     // Clonar formulario
     const clonedForm = form.cloneNode(true) as HTMLElement
     
@@ -124,46 +92,40 @@
     `
     clonedForm.appendChild(styleElement)
     
-    // Elementos a ocultar
-    const elementsToHide = [
-      '.damage-record-form', 
-      '.pdf-buttons',
-      '.q-table__bottom',
-      '.q-field__append', // Ocultar iconos de dropdown
-      '.q-icon' // Ocultar todos los iconos de Quasar
-    ]
+    // Elementos a ocultar y procesar
+    const elementsToHide = clonedForm.querySelectorAll('.pdf-buttons, .q-btn')
+    elementsToHide.forEach(el => el.remove())
 
-    // Ocultar elementos específicos
-    elementsToHide.forEach(selector => {
-      const elements = clonedForm.querySelectorAll(selector)
-      elements.forEach(element => {
-        if (element instanceof HTMLElement) {
-          element.style.display = 'none'
-          element.style.visibility = 'hidden'
-          element.style.position = 'absolute'
-          element.style.opacity = '0'
-          element.style.height = '0'
-          element.style.width = '0'
-        }
-      })
+    // Generar PDF
+    const canvas = await html2canvas(clonedForm)
+    const imgData = canvas.toDataURL('image/png')
+    
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
     })
 
-    // Contenedor temporal para renderizado
-    const tempDiv = document.createElement('div')
-    tempDiv.style.position = 'absolute'
-    tempDiv.style.left = '-9999px'
-    tempDiv.style.width = '210mm'
-    tempDiv.style.minHeight = '297mm'
-    tempDiv.style.padding = '10mm'
-    tempDiv.style.boxSizing = 'border-box'
-    tempDiv.appendChild(clonedForm)
-    document.body.appendChild(tempDiv)
+    const imgProps = pdf.getImageProperties(imgData)
+    const pdfWidth = pdf.internal.pageSize.getWidth()
+    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width
 
-    return clonedForm
+    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight)
+
+    // Convertir PDF a Blob
+    const pdfBlob = new Blob([pdf.output('arraybuffer')], { type: 'application/pdf' })
+    
+    // Emitir evento de PDF generado
+    emit('pdf-generated', pdfBlob)
+    
+    return pdfBlob
+  } catch (error) {
+    console.error('Error generando PDF:', error)
+    emit('pdf-error', error instanceof Error ? error : new Error('Error desconocido'))
+    throw error
   }
+}
 
-  // Exponer funciones para uso externo
-  defineExpose({
-    generatePDF
-  })
+// Exponer método de generación de PDF
+defineExpose({ generatePDF, logProps })
 </script>

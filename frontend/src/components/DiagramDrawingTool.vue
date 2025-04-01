@@ -73,9 +73,7 @@ const currentLineWidth = ref(lineWidths[1])
 
 const drawingCanvas = ref<HTMLCanvasElement | null>(null)
 const isDrawing = ref(false)
-
-// Historial de trazos para deshacer
-const drawHistory: ImageData[] = []
+const drawHistory = ref<ImageData[]>([])
 
 const selectColor = (color: string) => {
   currentColor.value = color
@@ -87,24 +85,15 @@ const selectLineWidth = (width: number) => {
 
 const startDrawing = (e: MouseEvent) => {
   if (!drawingCanvas.value) return
-
-  const canvas = drawingCanvas.value
-  const ctx = canvas.getContext('2d')
-  if (!ctx) return
-
-  // Guardar estado actual antes de dibujar
-  drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height))
-
+  
   isDrawing.value = true
-  draw(e)
-}
-
-const draw = (e: MouseEvent) => {
-  if (!isDrawing.value || !drawingCanvas.value) return
-
   const canvas = drawingCanvas.value
   const ctx = canvas.getContext('2d')
+  
   if (!ctx) return
+
+  // Guardar estado inicial del canvas antes de dibujar
+  drawHistory.value.push(ctx.getImageData(0, 0, canvas.width, canvas.height))
 
   const rect = canvas.getBoundingClientRect()
   const x = e.clientX - rect.left
@@ -124,24 +113,42 @@ const draw = (e: MouseEvent) => {
   emit('drawing-updated')
 }
 
-const stopDrawing = () => {
-  isDrawing.value = false
-}
-
-const undo = () => {
-  if (!drawingCanvas.value || drawHistory.length === 0) return
+const draw = (e: MouseEvent) => {
+  if (!isDrawing.value || !drawingCanvas.value) return
 
   const canvas = drawingCanvas.value
   const ctx = canvas.getContext('2d')
   if (!ctx) return
 
+  const rect = canvas.getBoundingClientRect()
+  const x = e.clientX - rect.left
+  const y = e.clientY - rect.top
+
+  ctx.lineTo(x, y)
+  ctx.stroke()
+  ctx.beginPath()
+  ctx.moveTo(x, y)
+
+  emit('drawing-updated')
+}
+
+const stopDrawing = () => {
+  isDrawing.value = false
+}
+
+const undo = () => {
+  if (!drawingCanvas.value || drawHistory.value.length === 0) return
+
+  const canvas = drawingCanvas.value
+  const ctx = canvas.getContext('2d')
+  
+  if (!ctx) return
+
   // Restaurar último estado guardado
-  const lastState = drawHistory.pop()
+  const lastState = drawHistory.value.pop()
   if (lastState) {
     ctx.putImageData(lastState, 0, 0)
   }
-
-  emit('drawing-updated')
 }
 
 const clearCanvas = () => {
@@ -152,7 +159,7 @@ const clearCanvas = () => {
   if (!ctx) return
 
   // Guardar estado antes de borrar
-  drawHistory.push(ctx.getImageData(0, 0, canvas.width, canvas.height))
+  drawHistory.value.push(ctx.getImageData(0, 0, canvas.width, canvas.height))
 
   // Limpiar canvas
   ctx.clearRect(0, 0, canvas.width, canvas.height)

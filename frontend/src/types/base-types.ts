@@ -5,24 +5,26 @@ export interface Properties {
   required: boolean
   cartNumber?: string
   diagramType?: string
-  value?: string
-  label?: string
+}
+
+export interface PropertyOption extends Properties {
+  label: string
+  value: string
+  diagramPath: string
 }
 
 export interface GuestInfo {
-  name?: string
-  email?: string
-  phone?: string
-  date?: string
-  inspectionDate?: string
+  name: string
+  email: string
+  phone: string
 }
 
 export interface CartTypeOption {
   id: string
   name: string
   label: string
-  diagramPath: string
   value: string
+  diagramPath: string
 }
 
 export interface Damage {
@@ -79,16 +81,43 @@ export interface DamageType {
   severity?: 'low' | 'medium' | 'high'
 }
 
+export interface PDFData {
+  guestInfo: GuestInfo
+  selectedProperty: Properties
+  selectedCartType: CartTypeOption
+  cartNumber: string
+  annotatedDiagram?: string
+}
+
 export interface InspectionData {
   id: string
-  guest_name: string
-  guest_email: string
-  property_name: string
-  cart_number: string
-  annotatedDiagramImage: string
-  initial_data: string
-  created_at: Date
-  status: string
-  initial_user_id?: string
-  date: string
+  guestInfo: GuestInfo
+  property: Properties
+  cartType: CartTypeOption
+  cartNumber: string
+  observations?: string
+  annotatedDiagram?: string
+  created_at?: Date
+  status?: string
+}
+
+export const EMPTY_GUEST_INFO: GuestInfo = {
+  name: '',
+  email: '',
+  phone: ''
+}
+
+export const EMPTY_PROPERTY: Properties = {
+  id: '',
+  name: '',
+  type: '',
+  required: false
+}
+
+export const EMPTY_CART_TYPE: CartTypeOption = {
+  id: '',
+  name: '',
+  label: '',
+  value: '',
+  diagramPath: ''
 }

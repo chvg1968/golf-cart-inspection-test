@@ -67,24 +67,51 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick } from 'vue'
-import golfCart4Seater from '../assets/images/4seater.jpg'
-import golfCart6Seater from '../assets/images/6seater.jpg'
+import { ref, computed, watch, onMounted, nextTick } from 'vue'
+import { fourSeaterImage, sixSeaterImage } from '@/assets/images'
 
-// Definir interfaces
-interface Damage {
-  x: number
-  y: number
-  part: string
-  type: string
-  quantity?: number
-}
+// Definir props con valores por defecto
+const props = withDefaults(defineProps<{
+  cartType: string
+  diagramPath?: string
+  diagramType?: string
+}>(), {
+  diagramPath: fourSeaterImage,
+  diagramType: '4seater'
+})
 
-interface CartTypeOption {
-  label: string
-  value: string
-  diagramPath: string
-}
+// Emitir eventos
+const emit = defineEmits<{
+  (e: 'drawing-created', drawingData: { drawing: string, cartType: string }): void
+}>()
+
+// Referencia al contenedor del diagrama
+const cartDiagramContainer = ref<HTMLDivElement | null>(null)
+const cartImage = ref<HTMLImageElement | null>(null)
+
+// Ruta del diagrama actual
+const currentDiagramPath = ref(props.diagramPath)
+
+// Observar cambios en el tipo de carrito y la ruta del diagrama
+watch([() => props.cartType, () => props.diagramType], ([newCartType, newDiagramType]) => {
+  console.log('Actualizando diagrama:', { newCartType, newDiagramType })
+  
+  // Priorizar diagramType si está presente
+  if (newDiagramType?.includes('6seater') || newCartType?.includes('6')) {
+    currentDiagramPath.value = sixSeaterImage
+  } else {
+    currentDiagramPath.value = fourSeaterImage
+  }
+  
+  console.log('Diagrama seleccionado:', currentDiagramPath.value)
+})
+
+watch(() => props.diagramPath, (newDiagramPath) => {
+  // Actualizar ruta de diagrama si se pasa explícitamente
+  if (newDiagramPath) {
+    currentDiagramPath.value = newDiagramPath
+  }
+})
 
 // Colores predefinidos
 const colorOptions = [
@@ -98,37 +125,6 @@ const lineWidths = [8]
 const currentLineWidth = ref(lineWidths[0])
 const currentColor = ref(colorOptions[0].color)
 
-// Props y emits
-const props = defineProps({
-  cartType: { 
-    type: [Object as () => CartTypeOption, String], 
-    required: true
-  },
-  damages: { 
-    type: Array as () => Damage[], 
-    default: () => [] 
-  },
-  diagramPath: {
-    type: String,
-    default: '../assets/images/4seater.png'
-  },
-  previousDrawing: {
-    type: String,
-    default: null
-  }
-})
-
-const emit = defineEmits([
-  'update-damage-position', 
-  'drawing-created'
-])
-
-// Referencias de elementos
-const cartDiagramContainer = ref<HTMLDivElement | null>(null)
-const cartImage = ref<HTMLImageElement | null>(null)
-const drawingCanvas = ref<HTMLCanvasElement | null>(null)
-const drawingContext = ref<CanvasRenderingContext2D | null>(null)
-
 // Estado de dibujo
 const isDrawing = ref(false)
 const lastX = ref(0)
@@ -141,20 +137,9 @@ const canvasHeight = ref(0)
 // Estado para almacenar historial de dibujo
 const drawingHistory = ref<string[]>([])
 
-// Calcular la ruta del diagrama actual
-const currentDiagramPath = computed(() => {
-  if (typeof props.cartType === 'string') {
-    return props.cartType.includes('4') ? golfCart4Seater : golfCart6Seater
-  }
-  return props.cartType?.diagramPath || golfCart4Seater
-})
-
 // Obtener label del tipo de carrito
 const cartTypeLabel = computed(() => {
-  if (typeof props.cartType === 'string') {
-    return props.cartType.includes('4') ? '4 Seater' : '6 Seater'
-  }
-  return props.cartType?.label || '4 Seater'
+  return props.cartType.includes('6') ? '6 Seater' : '4 Seater'
 })
 
 // Selección de color
@@ -164,6 +149,10 @@ const selectColor = (color: string) => {
     drawingContext.value.strokeStyle = color
   }
 }
+
+// Referencias de elementos
+const drawingCanvas = ref<HTMLCanvasElement | null>(null)
+const drawingContext = ref<CanvasRenderingContext2D | null>(null)
 
 // Método para configurar canvas
 const setupDrawingCanvas = () => {
@@ -286,13 +275,22 @@ const onImageLoad = () => {
 
 // Método para guardar dibujo
 const saveDrawing = () => {
-  if (!drawingCanvas.value) return
+  if (!drawingCanvas.value) return null
 
-  const drawing = drawingCanvas.value.toDataURL('image/png')
-  emit('drawing-created', {
-    drawing,
-    cartType: props.cartType
+  const canvas = drawingCanvas.value
+  const ctx = canvas.getContext('2d')
+  
+  if (!ctx) return null
+
+  // Usar HTMLCanvasElement específicamente
+  const imageData = (canvas as HTMLCanvasElement).toDataURL('image/png')
+  
+  emit('drawing-created', { 
+    drawing: imageData, 
+    cartType: props.cartType 
   })
+
+  return imageData
 }
 
 // Deshacer último trazo
