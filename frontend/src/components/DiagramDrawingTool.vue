@@ -241,4 +241,35 @@ canvas {
   border: 1px solid #ccc;
   cursor: crosshair;
 }
+
+/* Estilos para ocultar herramientas durante la generación de PDF */
+:global(.printing-pdf) .drawing-tools,
+:global(.printing-pdf) .color-picker,
+:global(.printing-pdf) .line-width-picker,
+:global(.printing-pdf) .action-buttons {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+:global(.printing-pdf) canvas {
+  border: 1px solid #ddd !important;
+  cursor: default !important;
+}
+
+@media print {
+  .drawing-tools,
+  .color-picker,
+  .line-width-picker,
+  .action-buttons {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+  }
+
+  canvas {
+    border: 1px solid #ddd !important;
+    cursor: default !important;
+  }
+}
 </style>

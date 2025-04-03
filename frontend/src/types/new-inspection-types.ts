@@ -1,10 +1,12 @@
 import { 
   Properties, 
-  CartTypeOption 
+  CartTypeOption,
+  PDFData
 } from './base-types'
 
 export interface PDFGeneratorRef {
-  generatePDF: () => Promise<Blob>
+  generatePDF: (data: PDFData) => Promise<Blob>
+  downloadPDF: (data: PDFData) => Promise<void>
 }
 
 export interface GuestInfo {

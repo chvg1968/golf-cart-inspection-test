@@ -13,10 +13,12 @@ export interface PropertyOption extends Properties {
   diagramPath: string
 }
 
+// Interfaz para información de invitado
 export interface GuestInfo {
-  name: string
-  email: string
-  phone: string
+  name: string;
+  email: string;
+  phone: string;
+  date: string;
 }
 
 export interface CartTypeOption {
@@ -83,10 +85,15 @@ export interface DamageType {
 
 export interface PDFData {
   guestInfo: GuestInfo
-  selectedProperty: Properties
-  selectedCartType: CartTypeOption
+  selectedProperty: Properties | null
+  selectedCartType: CartTypeOption | null
   cartNumber: string
   annotatedDiagram?: string
+  cartDiagramDrawing?: string
+  damages?: Damage[]
+  guestObservations?: string
+  signature?: string
+  termsAccepted?: boolean
 }
 
 export interface InspectionData {
@@ -104,7 +111,8 @@ export interface InspectionData {
 export const EMPTY_GUEST_INFO: GuestInfo = {
   name: '',
   email: '',
-  phone: ''
+  phone: '',
+  date: ''
 }
 
 export const EMPTY_PROPERTY: Properties = {

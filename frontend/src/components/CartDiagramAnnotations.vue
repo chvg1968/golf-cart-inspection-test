@@ -20,10 +20,10 @@
     <div 
       class="diagram-container" 
       ref="cartDiagramContainer"
-      @mousedown.prevent="handleContainerMouseDown"
-      @mousemove.prevent="handleContainerMouseMove"
-      @mouseup.prevent="handleContainerMouseUp"
-      @mouseout.prevent="handleContainerMouseOut"
+      @mousedown="handleContainerMouseDown"
+      @mousemove="handleContainerMouseMove"
+      @mouseup="handleContainerMouseUp"
+      @mouseout="handleContainerMouseOut"
     >
       <!-- Herramientas de dibujo -->
       <div class="drawing-tools">
@@ -33,15 +33,15 @@
             v-for="option in colorOptions" 
             :key="option.color"
             :style="{ backgroundColor: option.color }"
-            @click.prevent="selectColor(option.color)"
+            @click="selectColor(option.color)"
             :class="{ active: currentColor === option.color }"
           ></button>
         </div>
         
         <!-- Botones de acción -->
         <div class="action-buttons">
-          <button @click.prevent="undo" title="Deshacer último trazo">↩️</button>
-          <button @click.prevent="clearCanvas" title="Borrar todo">🗑️</button>
+          <button @click="undo" title="Deshacer último trazo">↩️</button>
+          <button @click="clearCanvas" title="Borrar todo">🗑️</button>
         </div>
       </div>
 
@@ -72,7 +72,7 @@ import { fourSeaterImage, sixSeaterImage } from '@/assets/images'
 
 // Definir props con valores por defecto
 const props = withDefaults(defineProps<{
-  cartType: string
+  cartType?: string
   diagramPath?: string
   diagramType?: string
 }>(), {
@@ -82,12 +82,14 @@ const props = withDefaults(defineProps<{
 
 // Emitir eventos
 const emit = defineEmits<{
-  (e: 'drawing-created', drawingData: { drawing: string, cartType: string }): void
+  (e: 'diagram-annotated', image: string): void
 }>()
 
 // Referencia al contenedor del diagrama
 const cartDiagramContainer = ref<HTMLDivElement | null>(null)
 const cartImage = ref<HTMLImageElement | null>(null)
+const drawingCanvas = ref<HTMLCanvasElement | null>(null)
+const drawingContext = ref<CanvasRenderingContext2D | null>(null)
 
 // Ruta del diagrama actual
 const currentDiagramPath = ref(props.diagramPath)
@@ -104,14 +106,7 @@ watch([() => props.cartType, () => props.diagramType], ([newCartType, newDiagram
   }
   
   console.log('Diagrama seleccionado:', currentDiagramPath.value)
-})
-
-watch(() => props.diagramPath, (newDiagramPath) => {
-  // Actualizar ruta de diagrama si se pasa explícitamente
-  if (newDiagramPath) {
-    currentDiagramPath.value = newDiagramPath
-  }
-})
+}, { immediate: true })
 
 // Colores predefinidos
 const colorOptions = [
@@ -120,39 +115,21 @@ const colorOptions = [
   { color: '#BF40BF' }   // Bright Magenta
 ]
 
-// Grosores de línea
-const lineWidths = [8]
-const currentLineWidth = ref(lineWidths[0])
-const currentColor = ref(colorOptions[0].color)
-
 // Estado de dibujo
 const isDrawing = ref(false)
 const lastX = ref(0)
 const lastY = ref(0)
+const currentColor = ref(colorOptions[0].color)
+const currentLineWidth = ref(8)
 
 // Dimensiones del canvas
 const canvasWidth = ref(0)
 const canvasHeight = ref(0)
 
-// Estado para almacenar historial de dibujo
-const drawingHistory = ref<string[]>([])
-
 // Obtener label del tipo de carrito
 const cartTypeLabel = computed(() => {
-  return props.cartType.includes('6') ? '6 Seater' : '4 Seater'
+  return props.cartType?.includes('6') ? '6 Seater' : '4 Seater'
 })
-
-// Selección de color
-const selectColor = (color: string) => {
-  currentColor.value = color
-  if (drawingContext.value) {
-    drawingContext.value.strokeStyle = color
-  }
-}
-
-// Referencias de elementos
-const drawingCanvas = ref<HTMLCanvasElement | null>(null)
-const drawingContext = ref<CanvasRenderingContext2D | null>(null)
 
 // Método para configurar canvas
 const setupDrawingCanvas = () => {
@@ -206,12 +183,7 @@ const drawLine = (fromX: number, fromY: number, toX: number, toY: number) => {
 
 // Manejadores de eventos del contenedor
 const handleContainerMouseDown = (event: MouseEvent) => {
-  console.log('Mouse down en contenedor')
-  
-  if (!drawingCanvas.value) {
-    console.error('Canvas no disponible')
-    return
-  }
+  if (!drawingCanvas.value) return
 
   const rect = drawingCanvas.value.getBoundingClientRect()
   const x = event.clientX - rect.left
@@ -240,31 +212,40 @@ const handleContainerMouseMove = (event: MouseEvent) => {
 const handleContainerMouseUp = () => {
   if (isDrawing.value) {
     isDrawing.value = false
-    saveCanvasState()
+    if (drawingCanvas.value) {
+      emit('diagram-annotated', drawingCanvas.value.toDataURL('image/png'))
+    }
   }
 }
 
 const handleContainerMouseOut = () => {
   if (isDrawing.value) {
     isDrawing.value = false
-    saveCanvasState()
+    if (drawingCanvas.value) {
+      emit('diagram-annotated', drawingCanvas.value.toDataURL('image/png'))
+    }
   }
 }
 
-// Método para guardar estado del canvas
-const saveCanvasState = () => {
-  if (!drawingCanvas.value) return
-
-  const currentDrawing = drawingCanvas.value.toDataURL('image/png')
-  
-  // Evitar guardar estados duplicados
-  if (
-    drawingHistory.value.length === 0 || 
-    currentDrawing !== drawingHistory.value[drawingHistory.value.length - 1]
-  ) {
-    drawingHistory.value.push(currentDrawing)
-    console.log('Estado guardado, longitud del historial:', drawingHistory.value.length)
+// Selección de color
+const selectColor = (color: string) => {
+  currentColor.value = color
+  if (drawingContext.value) {
+    drawingContext.value.strokeStyle = color
   }
+}
+
+// Deshacer último trazo
+const undo = () => {
+  if (!drawingContext.value || !drawingCanvas.value) return
+  drawingContext.value.clearRect(0, 0, drawingCanvas.value.width, drawingCanvas.value.height)
+}
+
+// Borrar canvas
+const clearCanvas = () => {
+  if (!drawingContext.value || !drawingCanvas.value) return
+  drawingContext.value.clearRect(0, 0, drawingCanvas.value.width, drawingCanvas.value.height)
+  emit('diagram-annotated', drawingCanvas.value.toDataURL('image/png'))
 }
 
 // Método para cargar imagen
@@ -273,90 +254,16 @@ const onImageLoad = () => {
   nextTick(setupDrawingCanvas)
 }
 
-// Método para guardar dibujo
-const saveDrawing = () => {
-  if (!drawingCanvas.value) return null
-
-  const canvas = drawingCanvas.value
-  const ctx = canvas.getContext('2d')
-  
-  if (!ctx) return null
-
-  // Usar HTMLCanvasElement específicamente
-  const imageData = (canvas as HTMLCanvasElement).toDataURL('image/png')
-  
-  emit('drawing-created', { 
-    drawing: imageData, 
-    cartType: props.cartType 
-  })
-
-  return imageData
-}
-
-// Deshacer último trazo
-const undo = () => {
-  console.log('Undo llamado, longitud actual del historial:', drawingHistory.value.length)
-  
-  if (drawingHistory.value.length <= 1) {
-    // Si solo hay un estado o ninguno, limpiar el canvas
-    clearCanvas()
-    return
-  }
-
-  // Eliminar el estado actual
-  drawingHistory.value.pop()
-
-  // Cargar el estado anterior
-  const previousDrawing = drawingHistory.value[drawingHistory.value.length - 1]
-  
-  if (!drawingCanvas.value || !drawingContext.value) return
-
-  const img = new Image()
-  img.onload = () => {
-    // Limpiar el canvas
-    drawingContext.value?.clearRect(0, 0, drawingCanvas.value!.width, drawingCanvas.value!.height)
-    
-    // Dibujar la imagen del estado anterior
-    drawingContext.value?.drawImage(img, 0, 0)
-    
-    console.log('Undo completado, nueva longitud del historial:', drawingHistory.value.length)
-  }
-  img.src = previousDrawing
-}
-
-// Borrar canvas
-const clearCanvas = () => {
-  if (!drawingContext.value || !drawingCanvas.value) return
-
-  drawingContext.value.clearRect(0, 0, drawingCanvas.value.width, drawingCanvas.value.height)
-  
-  // Reiniciar historial de dibujo
-  drawingHistory.value = []
-
-  // Guardar estado inicial vacío
-  const initialState = drawingCanvas.value.toDataURL('image/png')
-  drawingHistory.value.push(initialState)
-}
-
 // Inicialización
 onMounted(() => {
   console.log('Componente montado')
-  
-  // Configurar canvas cuando la imagen esté lista
   if (cartImage.value && cartImage.value.complete) {
     setupDrawingCanvas()
-  }
-
-  // Guardar estado inicial del canvas vacío
-  if (drawingCanvas.value) {
-    const initialState = drawingCanvas.value.toDataURL('image/png')
-    drawingHistory.value.push(initialState)
   }
 })
 
 // Exponer métodos
 defineExpose({
-  saveDrawing,
   undo,
   clearCanvas
 })
@@ -426,9 +333,9 @@ defineExpose({
 .drawing-tools {
   position: absolute;
   top: 10px;
-  left: -70px;  /* Mover a la izquierda */
+  left: 10px;
   display: flex;
-  flex-direction: column;  /* Cambiar a vertical */
+  flex-direction: column;
   gap: 10px;
   background: rgba(255, 255, 255, 0.8);
   padding: 10px;
@@ -438,14 +345,14 @@ defineExpose({
 
 .color-picker {
   display: flex;
-  flex-direction: column;  /* Cambiar a vertical */
+  flex-direction: column;
   gap: 10px;
 }
 
 .color-picker button {
-  width: 50px;
+  width: 30px;
   height: 30px;
-  border-radius: 5px;
+  border-radius: 50%;
   border: 2px solid transparent;
   cursor: pointer;
 }
@@ -456,7 +363,7 @@ defineExpose({
 
 .action-buttons {
   display: flex;
-  flex-direction: column;  /* Cambiar a vertical */
+  flex-direction: column;
   gap: 10px;
 }
 

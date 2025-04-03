@@ -121,4 +121,21 @@ export default {
   justify-content: center;
   margin-top: 15px;
 }
+
+/* Estilos para ocultar el botón durante la generación de PDF */
+:global(.printing-pdf) .pdf-buttons,
+:global(.printing-pdf) .clear-signature-button {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+@media print {
+  .pdf-buttons,
+  .clear-signature-button {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+  }
+}
 </style>

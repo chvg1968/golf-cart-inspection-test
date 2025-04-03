@@ -1,131 +1,161 @@
 <template>
-  <div class="pdf-generator" style="display: none;">
-    <!-- Componente invisible para generación de PDF -->
-  </div>
-</template>
+    <div class="pdf-generator" style="display: none;">
+      <!-- Componente invisible para generación de PDF -->
+    </div>
+  </template>
+  
+  <script setup lang="ts">
+  import { defineExpose, onMounted, ref } from 'vue'
+  import { useQuasar } from 'quasar'
+  import html2canvas from 'html2canvas'
+  import jsPDF from 'jspdf'
 
-<script setup lang="ts">
-import { defineEmits, defineExpose, withDefaults, defineProps } from 'vue'
-import html2canvas from 'html2canvas'
-import jsPDF from 'jspdf'
+  import type { 
+    GuestInfo, 
+    Properties, 
+    CartTypeOption, 
+    Damage 
+  } from '@/types/base-types'
 
-import type { 
-  GuestInfo, 
-  Properties, 
-  CartTypeOption,
-  PDFData
-} from '@/types/base-types'
+  // Definir un tipo para los datos del PDF
+  interface PDFData {
+    guestInfo?: GuestInfo
+    selectedProperty?: Properties | null
+    selectedCartType?: CartTypeOption | null
+    cartNumber?: string
+    damages?: Damage[]
+    annotatedDiagramImage?: string
+    cartDiagramDrawing?: string
+  }
 
-const emit = defineEmits<{
-  (e: 'pdf-generated', blob: Blob): void
-  (e: 'pdf-error', error: Error): void
-}>()
+  const $q = useQuasar()
+  const isMounted = ref(false)
 
-const props = withDefaults(defineProps<{
-  selectedProperty: Properties | null
-  selectedCartType: CartTypeOption
-  guestInfo: GuestInfo
-  cartNumber: string
-  annotatedDiagramImage: string | null
-}>(), {
-  selectedProperty: null,
-  annotatedDiagramImage: null
-})
-
-// Usar props para demostrar que están siendo utilizadas
-const logProps = () => {
-  console.log('Propiedades:', {
-    selectedProperty: props.selectedProperty,
-    selectedCartType: props.selectedCartType,
-    guestInfo: props.guestInfo,
-    cartNumber: props.cartNumber,
-    annotatedDiagramImage: props.annotatedDiagramImage
-  })
-}
-
-// Método para generar PDF con datos opcionales
-async function generatePDF(data: PDFData): Promise<Blob> {
-  try {
-    console.log('Iniciando generación de PDF con datos:', data)
-
-    // Añadir un retraso para asegurar que las marcas estén listas
-    await new Promise(resolve => setTimeout(resolve, 500))
-
-    const form = document.querySelector('.form-container') as HTMLElement
-    
-    if (!form) {
-      throw new Error('Formulario no encontrado')
+  // Método para generar PDF
+  const generatePDF = async (data: PDFData): Promise<Blob> => {
+    if (!isMounted.value) {
+      throw new Error('Componente no está montado')
     }
 
-    // Clonar formulario
-    const clonedForm = form.cloneNode(true) as HTMLElement
-    
-    // Añadir estilos de fuente al clon
-    const styleElement = document.createElement('style')
-    styleElement.textContent = `
-      body, html, * {
-        font-family: Arial, sans-serif !important;
-        line-height: 1.5 !important;
-        color: #333 !important;
+    try {
+      console.log('Iniciando generación de PDF con datos:', data)
+      
+      const form = document.querySelector('.form-container') as HTMLElement
+      if (!form) {
+        throw new Error('Formulario no encontrado')
       }
-      .text-h6, .page-title {
-        font-size: 24px !important;
-        font-weight: bold !important;
-        text-transform: uppercase !important;
-      }
-      input, select, textarea, div, span, 
-      .q-table, .q-table__container, 
-      .q-table__top, .q-table__bottom, 
-      .q-table thead, .q-table tbody, 
-      .q-table tr, .q-table th, .q-table td {
-        font-size: 24px !important;
-        font-weight: bold !important;
-      }
-      label {
-        font-size: 16px !important;
-        font-weight: normal !important;
-      }
-      .q-checkbox__label {
-        font-size: 16px !important;
-        font-weight: normal !important;
-      }
-    `
-    clonedForm.appendChild(styleElement)
-    
-    // Elementos a ocultar y procesar
-    const elementsToHide = clonedForm.querySelectorAll('.pdf-buttons, .q-btn')
-    elementsToHide.forEach(el => el.remove())
 
-    // Generar PDF
-    const canvas = await html2canvas(clonedForm)
-    const imgData = canvas.toDataURL('image/png')
-    
-    const pdf = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4'
-    })
+      // Clonar formulario
+      const clonedForm = form.cloneNode(true) as HTMLElement
+      
+      // Añadir estilos
+      const styleElement = document.createElement('style')
+      styleElement.textContent = `
+        body, html, * {
+          font-family: Arial, sans-serif !important;
+          line-height: 1.5 !important;
+          color: #333 !important;
+        }
+        .text-h6, .page-title {
+          font-size: 24px !important;
+          font-weight: bold !important;
+        }
+        input, select, textarea, div, span {
+          font-size: 24px !important;
+          font-weight: bold !important;
+        }
+        label {
+          font-size: 16px !important;
+          font-weight: normal !important;
+        }
+      `
+      clonedForm.appendChild(styleElement)
 
-    const imgProps = pdf.getImageProperties(imgData)
-    const pdfWidth = pdf.internal.pageSize.getWidth()
-    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width
+      // Ocultar elementos innecesarios
+      const elementsToHide = ['.q-field__append', '.q-icon']
+      elementsToHide.forEach(selector => {
+        const elements = clonedForm.querySelectorAll(selector)
+        elements.forEach(element => {
+          if (element instanceof HTMLElement) {
+            element.style.display = 'none'
+          }
+        })
+      })
 
-    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight)
+      // Contenedor temporal
+      const tempDiv = document.createElement('div')
+      tempDiv.style.position = 'absolute'
+      tempDiv.style.left = '-9999px'
+      tempDiv.style.width = '210mm'
+      tempDiv.style.minHeight = '297mm'
+      tempDiv.style.padding = '10mm'
+      tempDiv.style.boxSizing = 'border-box'
+      tempDiv.appendChild(clonedForm)
+      document.body.appendChild(tempDiv)
 
-    // Convertir PDF a Blob
-    const pdfBlob = new Blob([pdf.output('arraybuffer')], { type: 'application/pdf' })
-    
-    // Emitir evento de PDF generado
-    emit('pdf-generated', pdfBlob)
-    
-    return pdfBlob
-  } catch (error) {
-    console.error('Error generando PDF:', error)
-    emit('pdf-error', error instanceof Error ? error : new Error('Error desconocido'))
-    throw error
+      // Capturar canvas
+      const canvas = await html2canvas(clonedForm, {
+        scale: 1,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      })
+
+      // Remover contenedor temporal
+      document.body.removeChild(tempDiv)
+
+      // Crear PDF
+      const pdf = new jsPDF('p', 'mm', 'a4')
+      
+      // Calcular dimensiones
+      const imgRatio = canvas.width / canvas.height
+      const pageWidth = pdf.internal.pageSize.getWidth()
+      const pageHeight = pdf.internal.pageSize.getHeight()
+      
+      let imgWidth = pageWidth - 20
+      let imgHeight = imgWidth / imgRatio
+
+      if (imgHeight > pageHeight - 20) {
+        imgHeight = pageHeight - 20
+        imgWidth = imgHeight * imgRatio
+      }
+
+      // Calcular posición centrada
+      const xPosition = (pageWidth - imgWidth) / 2
+      const yPosition = (pageHeight - imgHeight) / 2
+
+      // Agregar imagen al PDF
+      pdf.addImage(
+        canvas.toDataURL('image/jpeg', 0.5),
+        'JPEG',
+        xPosition,
+        yPosition,
+        imgWidth,
+        imgHeight
+      )
+
+      // Generar Blob
+      const blob = pdf.output('blob')
+      console.log('PDF generado exitosamente')
+      return blob
+
+    } catch (error) {
+      console.error('Error en generación de PDF:', error)
+      throw error
+    }
   }
-}
 
-// Exponer método de generación de PDF
-defineExpose({ generatePDF, logProps })
-</script>
+  // Exponer métodos
+  const methods = {
+    generatePDF
+  }
+
+  // Exponer métodos usando defineExpose
+  defineExpose(methods)
+
+  // Log cuando el componente se monta
+  onMounted(() => {
+    isMounted.value = true
+    console.log('PDFGenerator montado, métodos disponibles:', Object.keys(methods))
+  })
+  </script>
