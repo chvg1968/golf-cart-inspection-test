@@ -51,11 +51,11 @@ export class InspectionService {
   }
 
   static validateForSubmission(data: InspectionFormData): boolean {
-    return this.validateForm(data) && data.signature && data.termsAccepted
+    return Boolean(this.validateForm(data) && data.signature && data.termsAccepted)
   }
 
   static generateFileName(guestName: string): string {
     const date = new Date().toISOString().split('T')[0]
     return `Inspeccion_${guestName}_${date}.pdf`
   }
-} 
+}

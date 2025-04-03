@@ -16,106 +16,18 @@
 
       <!-- Guest Information Section -->
       <div class="col-12">
-        <q-card flat bordered>
-          <q-card-section>
-            <div class="text-h6">Guest Information</div>
-            <div class="column q-col-gutter-md">
-              <div class="col-12">
-                <q-input 
-                  v-model="guestInfo.name" 
-                  label="Guest Name" 
-                  outlined 
-                  required
-                  style="width: 100%;"
-                  input-class="custom-input-text"
-                />
-              </div>
-              <div class="col-12">
-                <q-input 
-                  v-model="guestInfo.email" 
-                  label="Guest Email" 
-                  type="email" 
-                  outlined 
-                  required
-                  style="width: 100%;"
-                  input-class="custom-input-text"
-                  :rules="[val => val && val.includes('@') || 'Invalid email']"
-                />
-              </div>
-              <div class="col-12">
-                <q-input 
-                  v-model="guestInfo.phone" 
-                  label="Guest Phone" 
-                  outlined 
-                  required
-                  style="width: 100%;"
-                  input-class="custom-input-text"
-                  :rules="[
-                    val => val && val.length >= 10 || 'Please enter a valid phone number'
-                  ]"
-                />
-              </div>
-              <div class="col-12">
-                <q-input 
-                  v-model="guestInfo.date" 
-                  label="Inspection Date" 
-                  type="date" 
-                  outlined 
-                  required
-                  style="width: 100%;"
-                  input-class="custom-input-text"
-                />
-              </div>
-            </div>
-          </q-card-section>
-        </q-card>
+        <guest-information-form
+          v-model:guest-info="guestInfo"
+        />
       </div>
 
       <!-- Property and Cart Type Section -->
       <div class="col-12">
-        <q-card flat bordered>
-          <q-card-section>
-            <div class="text-h6">Property and Cart Type</div>
-            <div class="column q-col-gutter-md">
-              <div class="col-12">
-                <q-select 
-                  v-model="selectedProperty"
-                  :options="properties"
-                  option-label="name"
-                  option-value="id"
-                  label="Property *"
-                  outlined
-                  dense
-                  :rules="[val => !!val || 'Property is required']"
-                  @update:model-value="onPropertySelect"
-                />
-              </div>
-              <div class="col-12">
-                <q-select 
-                  v-model="selectedCartType"
-                  :options="cartTypes"
-                  option-label="name"
-                  option-value="name"
-                  label="Cart Type *"
-                  outlined
-                  dense
-                  :rules="[val => !!val || 'Cart Type is required']"
-                  @update:model-value="onCartTypeSelect"
-                />
-              </div>
-              <div class="col-12">
-                <q-input 
-                  v-model="cartNumber" 
-                  label="Cart Number" 
-                  outlined 
-                  readonly
-                  style="width: 100%;"
-                  input-class="custom-input-text"
-                />
-              </div>
-            </div>
-          </q-card-section>
-        </q-card>
+        <property-cart-form
+          v-model:selected-property="selectedProperty"
+          v-model:selected-cart-type="selectedCartType"
+          v-model:cart-number="cartNumber"
+        />
       </div>
 
       <!-- Sección de diagrama con selección condicional -->
@@ -132,15 +44,10 @@
 
       <!-- Terms and Signature Section -->
       <div class="col-12">
-        <q-card flat bordered>
-          <q-card-section>
-            <div class="text-h6">Terms and Signature</div>
-            <SignatureCanvas 
-              v-model:terms-accepted="termsAccepted"
-              @signature-change="handleSignatureChange"
-            />
-          </q-card-section>
-        </q-card>
+        <terms-signature-form
+          v-model:terms-accepted="termsAccepted"
+          @signature-change="handleSignatureChange"
+        />
       </div>
 
       <!-- Botones de acción -->
@@ -148,7 +55,7 @@
         <q-btn 
           label="Download PDF" 
           color="secondary" 
-          @click="generatePDF"
+          @click="(evt) => generatePDF(evt.target as HTMLElement, guestInfo)"
           :disable="!canDownloadPDF"
         />
         <q-btn 
@@ -156,36 +63,27 @@
           color="primary" 
           type="submit"
           :disable="!canSubmitInspection"
-        />
+        />    
       </div>
     </q-form>
   </q-page>
 </template>
 
 <script setup lang="ts">
-import SignatureCanvas from '@/components/SignatureCanvas.vue'
 import CartDiagramAnnotations from '@/components/CartDiagramAnnotations.vue'
+import GuestInformationForm from '@/components/GuestInformationForm.vue'
+import PropertyCartForm from '@/components/PropertyCartForm.vue'
+import TermsSignatureForm from '@/components/TermsSignatureForm.vue'
 import { useInspectionForm } from '@/composables/useInspectionForm'
 
 const {
-  // Estado
   guestInfo,
   selectedProperty,
   selectedCartType,
   cartNumber,
-  annotatedDiagramImage,
-  signature,
   termsAccepted,
-  
-  // Propiedades computadas
-  properties,
-  cartTypes,
   canDownloadPDF,
   canSubmitInspection,
-  
-  // Métodos
-  onPropertySelect,
-  onCartTypeSelect,
   handleDiagramAnnotated,
   handleSignatureChange,
   generatePDF,
@@ -201,10 +99,13 @@ const {
   color: #333;
 }
 
-.q-table__title {
+.full-width {
+  width: 100%;
+}
+
+.custom-input {
   font-family: 'Arial', sans-serif;
   font-size: 12px;
-  font-weight: bold;
   color: #333;
 }
 
@@ -212,8 +113,8 @@ const {
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 210mm; /* Ancho A4 */
-  min-height: 297mm; /* Alto A4 */
+  width: 210mm;
+  min-height: 297mm;
   margin: 0 auto;
   padding: 5mm;
   box-sizing: border-box;
@@ -262,17 +163,6 @@ const {
   margin-bottom: 1mm;
 }
 
-.damage-record-list {
-  width: 100%;
-  max-width: 180mm;
-}
-
-.q-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 10px;
-}
-
 .q-btn {
   margin-top: 3mm;
   padding: 2mm 4mm;
@@ -280,40 +170,8 @@ const {
   border-radius: 4px;
 }
 
-/* Estilos para ocultar elementos durante la generación del PDF */
-.printing-pdf .q-btn,
-.printing-pdf .canvas-toolbar,
-.printing-pdf .canvas-controls,
-.printing-pdf .q-toolbar,
-.printing-pdf .drawing-tools,
-.printing-pdf .color-picker,
-.printing-pdf .line-width-picker,
-.printing-pdf .action-buttons,
-.printing-pdf .clear-signature,
-.printing-pdf .signature-controls,
-.printing-pdf .q-drawer,
-.printing-pdf .q-drawer__backdrop,
-.printing-pdf .q-drawer__content,
-.printing-pdf .q-drawer__scroller,
-.printing-pdf .q-drawer__container,
-.printing-pdf .q-drawer__inner {
-  display: none !important;
-  visibility: hidden !important;
-  opacity: 0 !important;
-}
-
-.printing-pdf .form-container {
-  box-shadow: none !important;
-}
-
-.printing-pdf .signature-canvas,
-.printing-pdf canvas {
-  border: 1px solid #ddd !important;
-  background: white !important;
-  cursor: default !important;
-}
-
-/* Estilos específicos para la captura de PDF */
+/* Estilos para PDF y impresión */
+.printing-pdf,
 @media print {
   .q-btn,
   .canvas-toolbar,
@@ -330,7 +188,8 @@ const {
   .q-drawer__content,
   .q-drawer__scroller,
   .q-drawer__container,
-  .q-drawer__inner {
+  .q-drawer__inner,
+  .row.q-gutter-md {
     display: none !important;
     visibility: hidden !important;
     opacity: 0 !important;
@@ -347,7 +206,9 @@ const {
     cursor: default !important;
   }
 
-  .page-title, .custom-input-text, .q-table__title {
+  .page-title,
+  .custom-input-text,
+  .q-table__title {
     font-size: 10px;
   }
 
