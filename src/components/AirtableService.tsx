@@ -62,7 +62,7 @@ export async function sendToAirtable(formData: InspectionFormData, pdfLink: stri
         
         // Si el pdfLink parece ser un ID o path relativo, construir la URL completa
         if (!pdfLink.startsWith('http')) {
-            const supabaseProjectId = 'lngsgyvpqhjmedjrycqw';
+            const supabaseProjectId = 'rxudgxowradykfqfwhkp'; // Actualizar este ID
             const pdfFileName = `${formData.property.toLowerCase().replace(/\s+/g, '_')}_${formData.guestName.toLowerCase().replace(/\s+/g, '_')}_${formData.inspectionDate.replace(/-/g, '_')}.pdf`;
             finalPdfLink = `https://${supabaseProjectId}.supabase.co/storage/v1/object/public/pdfs/${pdfFileName}`;
             console.log('Construyendo URL completa para PDF:', finalPdfLink);

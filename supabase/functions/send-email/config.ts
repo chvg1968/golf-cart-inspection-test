@@ -27,8 +27,8 @@ export const SUPPORT_EMAIL = "support@luxepropertiespr.com";
 
 // Configuración de URLs
 export const URLS = {
-  baseUrl: "https://golf-cart-inspection.netlify.app",
-  supabaseProjectId: "lngsgyvpqhjmedjrycqw"
+  baseUrl: "https://golfcartinspectiontest.netlify.app",
+  supabaseProjectId: "rxudgxowradykfqfwhkp"
 };
 
 // Funciones para obtener las listas de administradores
