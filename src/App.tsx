@@ -120,59 +120,72 @@ function InspectionForm() {
     setIsLoading(true);
 
     try {
+      // Cargar la inspección con los datos del diagrama relacionado
       const { data: inspection, error } = await supabase
         .from('inspections')
-        .select('*')
+        .select(`
+          *,
+          diagram_marks:diagram_marks_id (
+            diagram_name,
+            points
+          )
+        `)
         .eq('id', inspectionId)
         .single();
 
       if (error) throw error;
-
-      if (inspection) {
-        setFormData({
-          guestName: inspection.guest_name,
-          guestEmail: inspection.guest_email,
-          guestPhone: inspection.guest_phone,
-          inspectionDate: inspection.inspection_date,
-          property: inspection.property,
-          cartType: inspection.cart_type,
-          cartNumber: inspection.cart_number,
-          observations: inspection.observations || '',
-        });
-
-        const property = PROPERTIES.find(p => p.id === inspection.property);
-        if (property) {
-          setSelectedProperty(property);
+      
+      // Establecer los datos del formulario
+      setFormData({
+        guestName: inspection.guest_name,
+        guestEmail: inspection.guest_email,
+        guestPhone: inspection.guest_phone,
+        inspectionDate: inspection.inspection_date,
+        property: inspection.property,
+        cartType: inspection.cart_type,
+        cartNumber: inspection.cart_number,
+        observations: inspection.observations || ''
+      });
+      
+      // Establecer los puntos del diagrama
+      // Primero intentamos obtenerlos de la relación diagram_marks
+      if (inspection.diagram_marks && inspection.diagram_marks.points) {
+        setDiagramPoints(inspection.diagram_marks.points);
+        // Crear historial para deshacer
+        const uniquePoints = inspection.diagram_marks.points;
+        const newHistory = uniquePoints.reduce<Point[][]>(
+          (history, point) => {
+            const lastStep = history[history.length - 1] || [];
+            return [...history, [...lastStep, point]];
+          },
+          [[]]
+        );
+        setDiagramHistory(newHistory);
+        setCurrentStep(newHistory.length - 1);
+      } 
+      // Por compatibilidad, también verificamos diagram_data
+      else if (inspection.diagram_data) {
+        const diagramData = inspection.diagram_data as DiagramData;
+        if (diagramData.points && diagramData.points.length > 0) {
+          const uniquePoints = diagramData.points.filter((point, index, self) =>
+            index === self.findIndex(p => p.x === point.x && p.y === point.y && p.color === point.color)
+          );
+          setDiagramPoints(uniquePoints);
+          const newHistory = uniquePoints.reduce<Point[][]>(
+            (history, point) => {
+              const lastStep = history[history.length - 1] || [];
+              return [...history, [...lastStep, point]];
+            },
+            [[]]
+          );
+          setDiagramHistory(newHistory);
+          setCurrentStep(newHistory.length - 1);
         }
+      }
 
-        // Primero establecemos los datos del diagrama
-        // Cargar las marcas del diagrama
-        if (inspection.diagram_data) {
-          const diagramData = inspection.diagram_data as DiagramData;
-          if (diagramData.points && diagramData.points.length > 0) {
-            // Eliminar duplicados de los puntos
-            const uniquePoints = diagramData.points.filter((point, index, self) =>
-              index === self.findIndex(p => p.x === point.x && p.y === point.y && p.color === point.color)
-            );
-
-            setDiagramPoints(uniquePoints);
-            // Crear un historial que permita deshacer cada marca
-            const newHistory = uniquePoints.reduce<Point[][]>(
-              (history, point) => {
-                const lastStep = history[history.length - 1] || [];
-                return [...history, [...lastStep, point]];
-              },
-              [[]]
-            );
-            setDiagramHistory(newHistory);
-            setCurrentStep(newHistory.length - 1);
-          }
-        }
-
-        if (inspection.status === 'completed') {
-          navigate('/thank-you');
-          return;
-        }
+      if (inspection.status === 'completed') {
+        navigate('/thank-you');
+        return;
       }
     } catch (error) {
       console.error('Error loading inspection:', error);
@@ -321,120 +334,175 @@ function InspectionForm() {
 
       if (!isGuestView) {
         // Crear nueva inspección
-        const { data: inspection, error } = await supabase
-          .from('inspections')
-          .insert([
-            {
-              guest_name: formData.guestName,
-              guest_email: formData.guestEmail,
-              guest_phone: formData.guestPhone,
-              inspection_date: formData.inspectionDate,
-              property: formData.property,
-              cart_type: formData.cartType,
-              cart_number: formData.cartNumber,
-              diagram_data: selectedProperty ? {
-                points: diagramPoints,
-                width: 600,
-                height: 400,
-                diagramType: selectedProperty.diagramType
-              } : null,
-              status: 'pending'
+        const createInspection = async () => {
+          try {
+            // Si hay un diagrama seleccionado, primero obtenemos o creamos el registro en diagram_marks
+            let diagramMarksId = null;
+            
+            if (selectedProperty && selectedProperty.diagramType) {
+              // Buscar si ya existe un registro para este tipo de diagrama
+              const { data: existingDiagramMarks, error: fetchError } = await supabase
+                .from('diagram_marks')
+                .select('id')
+                .eq('diagram_name', selectedProperty.diagramType)
+                .maybeSingle();
+                
+              if (fetchError) throw fetchError;
+              
+              if (existingDiagramMarks) {
+                // Si existe, usamos ese ID
+                diagramMarksId = existingDiagramMarks.id;
+                
+                // Opcionalmente, actualizar los puntos si han cambiado
+                if (diagramPoints.length > 0) {
+                  await supabase
+                    .from('diagram_marks')
+                    .update({ 
+                      points: diagramPoints,
+                      updated_at: new Date().toISOString()
+                    })
+                    .eq('id', diagramMarksId);
+                }
+              } else if (diagramPoints.length > 0) {
+                // Si no existe y tenemos puntos, creamos un nuevo registro
+                const { data: newDiagramMarks, error: insertError } = await supabase
+                  .from('diagram_marks')
+                  .insert({
+                    diagram_name: selectedProperty.diagramType,
+                    points: diagramPoints
+                  })
+                  .select('id')
+                  .single();
+                  
+                if (insertError) throw insertError;
+                diagramMarksId = newDiagramMarks.id;
+              }
             }
-          ])
-          .select()
-          .single();
+            
+            // Ahora creamos la inspección con la referencia al diagram_marks
+            const { data: inspection, error } = await supabase
+              .from('inspections')
+              .insert([
+                {
+                  guest_name: formData.guestName,
+                  guest_email: formData.guestEmail,
+                  guest_phone: formData.guestPhone,
+                  inspection_date: formData.inspectionDate,
+                  property: formData.property,
+                  cart_type: formData.cartType,
+                  cart_number: formData.cartNumber,
+                  diagram_marks_id: diagramMarksId,
+                  // Mantenemos diagram_data por compatibilidad, pero podríamos eliminarlo en el futuro
+                  diagram_data: selectedProperty ? {
+                    points: diagramPoints,
+                    width: 600,
+                    height: 400,
+                    diagramType: selectedProperty.diagramType
+                  } : null,
+                  status: 'pending'
+                }
+              ])
+              .select()
+              .single();
 
-        if (error) throw error;
+            if (error) throw error;
+            
+            // Enviar email al invitado y guardar en Airtable
+            // Convertir puntos a un formato más simple y seguro
+            const safePoints = diagramPoints.map(point => ({
+              x: Number(point.x),
+              y: Number(point.y),
+              color: point.color,
+              size: Number(point.size || 6)
+            }));
 
-        // Enviar email al invitado y guardar en Airtable
-        // Convertir puntos a un formato más simple y seguro
-        const safePoints = diagramPoints.map(point => ({
-          x: Number(point.x),
-          y: Number(point.y),
-          color: point.color,
-          size: Number(point.size || 6)
-        }));
-
-        console.log('Puntos de diagrama para envío:', {
-          diagramPointsCount: safePoints.length,
-          diagramPointsExample: safePoints.slice(0, 3)
-        });
-
-        // Modificar el envío para usar el enlace del PDF
-        await Promise.all([
-          (() => {
-            // Registro detallado del PDF
-            console.log('Detalles del PDF:', {
-              pdfData: pdfData,
-              base64Disponible: !!pdfData?.download?.base64,
-              base64Length: pdfData?.download?.base64?.length
+            console.log('Puntos de diagrama para envío:', {
+              diagramPointsCount: safePoints.length,
+              diagramPointsExample: safePoints.slice(0, 3)
             });
 
-            return sendFormEmail('guest-form', {
-              to_email: formData.guestEmail,
-              to_name: formData.guestName,
-              from_name: 'Golf Cart Inspection System',
-              from_email: 'no-reply@email.golfcartinspection.app',
-              property: formData.property,
-              cart_type: formData.cartType,
-              cart_number: formData.cartNumber,
-              inspection_date: formData.inspectionDate,
-              form_link: `${window.location.origin}/inspection/${inspection.id}`,
-              pdf_attachment: pdfUrl, // Usar el enlace del PDF directamente
+            // Modificar el envío para usar el enlace del PDF
+            await Promise.all([
+              (() => {
+                // Registro detallado del PDF
+                console.log('Detalles del PDF:', {
+                  pdfData: pdfData,
+                  base64Disponible: !!pdfData?.download?.base64,
+                  base64Length: pdfData?.download?.base64?.length
+                });
 
-              // Usar puntos seguros
-              diagram_points: safePoints,
-              isCreationAlert: true // Indicar explícitamente que queremos enviar alerta
+                return sendFormEmail('guest-form', {
+                  to_email: formData.guestEmail,
+                  to_name: formData.guestName,
+                  from_name: 'Golf Cart Inspection System',
+                  from_email: 'no-reply@email.golfcartinspection.app',
+                  property: formData.property,
+                  cart_type: formData.cartType,
+                  cart_number: formData.cartNumber,
+                  inspection_date: formData.inspectionDate,
+                  form_link: `${window.location.origin}/inspection/${inspection.id}`,
+                  pdf_attachment: pdfUrl, // Usar el enlace del PDF directamente
+
+                  // Usar puntos seguros
+                  diagram_points: safePoints,
+                  isCreationAlert: true // Indicar explícitamente que queremos enviar alerta
+                });
+              })(),
+              sendToAirtable({
+                guestName: formData.guestName,
+                inspectionDate: formData.inspectionDate,
+                property: formData.property
+              }, pdfUrl)
+            ]);
+
+            console.log('Detalles de puntos de diagrama:', {
+              diagramPointsCount: safePoints.length,
+              diagramPointsExample: safePoints.slice(0, 3),
+              diagramPointsTypes: safePoints.map(p => typeof p)
             });
-          })(),
-          sendToAirtable({
-            guestName: formData.guestName,
-            inspectionDate: formData.inspectionDate,
-            property: formData.property
-          }, pdfUrl)
-        ]);
 
-        console.log('Detalles de puntos de diagrama:', {
-          diagramPointsCount: safePoints.length,
-          diagramPointsExample: safePoints.slice(0, 3),
-          diagramPointsTypes: safePoints.map(p => typeof p)
-        });
+            // Descargar versión local
+            try {
+              if (pdfData && pdfData.download && pdfData.download.blob) {
+                const downloadUrl = window.URL.createObjectURL(pdfData.download.blob);
+                const link = document.createElement('a');
+                link.href = downloadUrl;
+                link.download = pdfFilename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(downloadUrl);
+              } else {
+                throw new Error('PDF data is not available for download');
+              }
+            } catch (downloadError) {
+              console.error('Error downloading PDF:', downloadError);
+              alert('Error downloading PDF. Please try again.');
+            }
 
-        // Descargar versión local
-        try {
-          if (pdfData && pdfData.download && pdfData.download.blob) {
-            const downloadUrl = window.URL.createObjectURL(pdfData.download.blob);
-            const link = document.createElement('a');
-            link.href = downloadUrl;
-            link.download = pdfFilename;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            window.URL.revokeObjectURL(downloadUrl);
-          } else {
-            throw new Error('PDF data is not available for download');
+            setNotification({ type: 'success', message: '¡Enlace enviado exitosamente al huésped!' });
+            setFormData({
+              guestName: '',
+              guestEmail: '',
+              guestPhone: '',
+              inspectionDate: format(new Date(), 'yyyy-MM-dd'),
+              property: '',
+              cartType: '',
+              cartNumber: '',
+              observations: ''
+            });
+            setSelectedProperty(null);
+            setDiagramPoints([]);
+            setDiagramHistory([[]]);
+            setCurrentStep(0);
+            navigate('/thank-you');
+          } catch (error) {
+            console.error('Error creating inspection:', error);
+            setNotification({ type: 'error', message: 'Error al crear la inspección' });
           }
-        } catch (downloadError) {
-          console.error('Error downloading PDF:', downloadError);
-          alert('Error downloading PDF. Please try again.');
-        }
+        };
 
-        setNotification({ type: 'success', message: '¡Enlace enviado exitosamente al huésped!' });
-        setFormData({
-          guestName: '',
-          guestEmail: '',
-          guestPhone: '',
-          inspectionDate: format(new Date(), 'yyyy-MM-dd'),
-          property: '',
-          cartType: '',
-          cartNumber: '',
-          observations: ''
-        });
-        setSelectedProperty(null);
-        setDiagramPoints([]);
-        setDiagramHistory([[]]);
-        setCurrentStep(0);
-        navigate('/thank-you');
+        await createInspection();
       } else {
         // Actualizar inspección existente
         const { error } = await supabase

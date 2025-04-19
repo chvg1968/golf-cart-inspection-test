@@ -22,6 +22,14 @@ export interface DiagramData {
   diagramType: string;
 }
 
+export interface DiagramMarks {
+  id: string;
+  diagram_name: string;
+  points: Point[];
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Inspection {
   id: string;
   guest_name: string;
@@ -33,6 +41,8 @@ export interface Inspection {
   cart_number: string;
   observations: string;
   diagram_data?: DiagramData;
+  diagram_marks_id?: string;
+  diagram_marks?: DiagramMarks;
   signature_data?: string;
   status: 'pending' | 'completed';
   created_at: string;
