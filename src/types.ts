@@ -93,7 +93,7 @@ export const PROPERTIES: Property[] = [
     type: 'string', 
     required: false, 
     cartNumber: '22', 
-    diagramType: 'casaprestige4.jpg',
+    diagramType: 'casaprestige_4.jpg',
     cartType: '4-Seater'
   },
   { 
@@ -102,7 +102,7 @@ export const PROPERTIES: Property[] = [
     type: 'string', 
     required: false, 
     cartNumber: '193', 
-    diagramType: 'casaprestige6.jpg',
+    diagramType: 'casaprestige_6.jpg',
     cartType: '6-Seater'
   },
   { 
