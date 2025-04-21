@@ -146,6 +146,10 @@ function InspectionForm() {
         cartNumber: inspection.cart_number,
         observations: inspection.observations || ''
       });
+
+      // Establecer la propiedad seleccionada para el canvas
+      const propertyObj = PROPERTIES.find(p => p.id === inspection.property);
+      setSelectedProperty(propertyObj || null);
       
       // Establecer los puntos del diagrama
       // Primero intentamos obtenerlos de la relación diagram_marks
