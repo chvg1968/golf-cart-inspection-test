@@ -12,7 +12,7 @@ import { LoadingSpinner } from './components/LoadingSpinner';
 import { ThankYou } from './components/ThankYou';
 import { sendFormEmail } from './lib/email';
 import { sendToAirtable, updateAirtablePdfLink } from './components/AirtableService';
-import { generateFormPDF } from './components/PDFGenerator';
+import { generateFormPDF, PDFButton } from './components/PDFGenerator';
 import './styles/orientation-warning.css';
 
 interface PDFVersion {
@@ -440,7 +440,7 @@ function InspectionForm() {
                   cart_type: formData.cartType,
                   cart_number: formData.cartNumber,
                   inspection_date: formData.inspectionDate,
-                  form_link: `${window.location.origin}/inspection/${inspection.id}`,
+                  form_link: `https://golfcartinspectiontest.netlify.app/inspection/${inspection.id}`,
                   pdf_attachment: pdfUrl, // Usar el enlace del PDF directamente
 
                   // Usar puntos seguros
@@ -567,7 +567,6 @@ function InspectionForm() {
           if (error) throw error;
 
           // Ya que form_id no existe en la tabla, generamos un ID único para el PDF
-          const uniqueId = `${id}-${Date.now()}`;
           const pdfFileName = `${formData.property}_${formData.guestName.toLowerCase().replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
 
           // Restaurar la funcionalidad de descarga del PDF
@@ -649,6 +648,19 @@ function InspectionForm() {
     return <LoadingSpinner />;
   }
 
+  // --- VALIDATION LOGIC ---
+  const guestInfoValid = !!(
+    formData.guestName &&
+    formData.guestEmail &&
+    formData.guestPhone &&
+    formData.inspectionDate
+  );
+  const propertyValid = !!formData.property && selectedProperty !== null;
+  const diagramValid = diagramPoints.length > 0;
+
+  // Only allow PDF download/submit when all conditions are met
+  const formValid = guestInfoValid && propertyValid && diagramValid;
+
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
       {notification && (
@@ -709,13 +721,11 @@ function InspectionForm() {
             />
 
             <div className="flex justify-end space-x-4">
-              <button
-                type="submit"
-                disabled={isSending}
-                className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isSending ? 'Processing...' : (isGuestView ? 'Sign and Download PDF' : 'Send to Guest')}
-              </button>
+              {/* Use PDFButton for consistent UI and pass validation state */}
+              <PDFButton
+                isSending={isSending}
+                disabled={!formValid}
+              />
             </div>
           </form>
         </div>
