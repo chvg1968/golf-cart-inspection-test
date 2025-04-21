@@ -671,15 +671,19 @@ function InspectionForm() {
               onPropertyChange={handlePropertyChange}
             />
 
-            <DiagramCanvas
-              isGuestView={isGuestView}
-              selectedProperty={selectedProperty}
-              history={diagramHistory}
-              currentStep={currentStep}
-              onUndo={handleUndo}
-              onClear={clearCanvas}
-              onPointsChange={handlePointsChange}
-            />
+            {selectedProperty ? (
+              <DiagramCanvas
+                isGuestView={isGuestView}
+                selectedProperty={selectedProperty}
+                history={diagramHistory}
+                currentStep={currentStep}
+                onUndo={handleUndo}
+                onClear={handleClear}
+                onPointsChange={handlePointsChange}
+              />
+            ) : (
+              <div className="text-center text-gray-500">Cargando diagrama...</div>
+            )}
 
             <SignatureSection
               isGuestView={isGuestView}
