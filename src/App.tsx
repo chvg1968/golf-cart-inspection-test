@@ -340,43 +340,8 @@ function InspectionForm() {
             let diagramMarksId = null;
             
             if (selectedProperty && selectedProperty.diagramType) {
-              // Buscar si ya existe un registro para este tipo de diagrama
-              const { data: existingDiagramMarks, error: fetchError } = await supabase
-                .from('diagram_marks')
-                .select('id')
-                .eq('diagram_name', selectedProperty.diagramType)
-                .maybeSingle();
-                
-              if (fetchError) throw fetchError;
-              
-              if (existingDiagramMarks) {
-                // Si existe, usamos ese ID
-                diagramMarksId = existingDiagramMarks.id;
-                
-                // Opcionalmente, actualizar los puntos si han cambiado
-                if (diagramPoints.length > 0) {
-                  await supabase
-                    .from('diagram_marks')
-                    .update({ 
-                      points: diagramPoints,
-                      updated_at: new Date().toISOString()
-                    })
-                    .eq('id', diagramMarksId);
-                }
-              } else if (diagramPoints.length > 0) {
-                // Si no existe y tenemos puntos, creamos un nuevo registro
-                const { data: newDiagramMarks, error: insertError } = await supabase
-                  .from('diagram_marks')
-                  .insert({
-                    diagram_name: selectedProperty.diagramType,
-                    points: diagramPoints
-                  })
-                  .select('id')
-                  .single();
-                  
-                if (insertError) throw insertError;
-                diagramMarksId = newDiagramMarks.id;
-              }
+              // Guardar o actualizar las marcas y obtener el id real del registro
+              diagramMarksId = await saveDiagramMarks(selectedProperty.diagramType, diagramPoints);
             }
             
             // Ahora creamos la inspección con la referencia al diagram_marks

@@ -4,7 +4,7 @@ import { Point } from '../types';
 // Cache para almacenar los puntos por diagrama
 const pointsCache = new Map<string, Point[]>();
 
-export async function saveDiagramMarks(diagramId: string, points: Point[]): Promise<void> {
+export async function saveDiagramMarks(diagramId: string, points: Point[]): Promise<string | null> {
   try {
     console.log('[saveDiagramMarks] Starting save operation:', {
       diagramId,
@@ -33,7 +33,7 @@ export async function saveDiagramMarks(diagramId: string, points: Point[]): Prom
 
     if (selectError) {
       console.error('[saveDiagramMarks] Error checking existing record:', selectError);
-      return;
+      return null;
     }
 
     console.log('[saveDiagramMarks] Existing record check:', {
@@ -51,12 +51,14 @@ export async function saveDiagramMarks(diagramId: string, points: Point[]): Prom
     };
 
     // Realizar upsert usando el id como clave
-    const { error } = await supabase
+    const { data: upserted, error } = await supabase
       .from('diagram_marks')
       .upsert({
         id: existingData?.id,
         ...data
-      });
+      })
+      .select('id')
+      .maybeSingle();
 
     if (error) {
       console.error('[saveDiagramMarks] Error in upsert operation:', error);
