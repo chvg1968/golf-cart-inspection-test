@@ -4,13 +4,10 @@ import { Point } from '../types';
 // Cache para almacenar los puntos por diagrama
 const pointsCache = new Map<string, Point[]>();
 
-export async function saveDiagramMarks(diagramName: string, points: Point[]): Promise<void> {
+export async function saveDiagramMarks(diagramId: string, points: Point[]): Promise<void> {
   try {
-    // Normalizar el nombre del diagrama (eliminar extensión si existe)
-    const normalizedName = diagramName.replace(/\.(jpg|png)$/, '');
     console.log('[saveDiagramMarks] Starting save operation:', {
-      diagramName,
-      normalizedName,
+      diagramId,
       pointsCount: points.length
     });
 
@@ -31,7 +28,7 @@ export async function saveDiagramMarks(diagramName: string, points: Point[]): Pr
     const { data: existingData, error: selectError } = await supabase
       .from('diagram_marks')
       .select('id')
-      .eq('diagram_name', normalizedName)
+      .eq('diagram_id', diagramId)
       .maybeSingle();
 
     if (selectError) {
@@ -47,7 +44,7 @@ export async function saveDiagramMarks(diagramName: string, points: Point[]): Pr
     // Preparar los datos para la operación
     const now = new Date().toISOString();
     const data = {
-      diagram_name: normalizedName,
+      diagram_id: diagramId,
       points: normalizedPoints,
       updated_at: now,
       ...(existingData?.id ? {} : { created_at: now })
@@ -67,7 +64,7 @@ export async function saveDiagramMarks(diagramName: string, points: Point[]): Pr
     }
 
     // Actualizar el caché después de guardar
-    pointsCache.set(normalizedName, normalizedPoints);
+    pointsCache.set(diagramId, normalizedPoints);
 
     console.log('[saveDiagramMarks] Save operation completed successfully');
   } catch (error) {
@@ -75,23 +72,20 @@ export async function saveDiagramMarks(diagramName: string, points: Point[]): Pr
   }
 }
 
-export async function getDiagramMarks(diagramName: string): Promise<Point[]> {
+export async function getDiagramMarks(diagramId: string): Promise<Point[]> {
   try {
-    // Normalizar el nombre del diagrama (eliminar extensión si existe)
-    const normalizedName = diagramName.replace(/\.(jpg|png)$/, '');
-
     // Verificar si hay datos en caché
-    const cached = pointsCache.get(normalizedName);
+    const cached = pointsCache.get(diagramId);
     if (cached) {
       return cached;
     }
 
-    console.log('[getDiagramMarks] Getting marks for:', { diagramName, normalizedName });
+    console.log('[getDiagramMarks] Getting marks for:', { diagramId });
 
     const { data, error } = await supabase
       .from('diagram_marks')
       .select('points')
-      .eq('diagram_name', normalizedName)
+      .eq('diagram_id', diagramId)
       .order('created_at', { ascending: false })
       .maybeSingle();
 
@@ -112,7 +106,7 @@ export async function getDiagramMarks(diagramName: string): Promise<Point[]> {
       }));
 
       // Actualizar el caché
-      pointsCache.set(normalizedName, normalizedPoints);
+      pointsCache.set(diagramId, normalizedPoints);
 
       console.log('[getDiagramMarks] Normalized points:', {
         count: normalizedPoints.length,

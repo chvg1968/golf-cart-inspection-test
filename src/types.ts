@@ -151,3 +151,17 @@ export const PROPERTIES: Property[] = [
     cartType: '6-Seater'
   }
 ];
+
+export const diagramNameToId = {
+  "rental_150": "rental_6_passenger_150",
+  "rental_144": "rental_6_passenger_144",
+  "villaflora_10180": "villa_flora_10180",
+  "oceanhaven_208": "ocean_haven_208",
+  "casaprestige_4": "casa_prestige_g7_4_passenger",
+  "casaprestige_6": "casa_prestige_g7_6_passenger",
+  "villatiffany_10389": "villa_tiffany_10389",
+  "villapalacio_7256": "villa_palacio_7256",
+  "villaclara_3325": "villa_clara_3325",
+  "apt2102_72": "apt_2_102_72",
+  "villapaloma_5138": "villa_paloma_5138"
+};
