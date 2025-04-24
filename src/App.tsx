@@ -320,7 +320,100 @@ function InspectionForm() {
       }
 
       if (!isGuestView) {
-        // Obtener datos de la inspección
+        // Crear nueva inspección
+        const { data: newInspection, error: createError } = await supabase
+          .from('inspections')
+          .insert([
+            {
+              guest_name: formData.guestName,
+              guest_email: formData.guestEmail,
+              guest_phone: formData.guestPhone,
+              inspection_date: formData.inspectionDate,
+              property: formData.property,
+              cart_type: formData.cartType,
+              cart_number: formData.cartNumber,
+              diagram_data: selectedProperty ? {
+                points: diagramPoints,
+                width: 600,
+                height: 400,
+                diagramType: selectedProperty.diagramType
+              } : null,
+              status: 'pending'
+            }
+          ])
+          .select()
+          .single();
+
+        if (createError) throw createError;
+
+        // Generar form_id y form_link para la nueva inspección
+        const formId = `${formData.guestName.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`;
+        const pdfFileName = `${formData.property}_${formData.guestName.toLowerCase().replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+        const formLink = `https://rxudgxowradykfqfwhkp.supabase.co/storage/v1/object/public/pdfs/${pdfFileName}`;
+
+        // Actualizar la nueva inspección con form_id y form_link
+        const { error: updateError } = await supabase
+          .from('inspections')
+          .update({
+            form_id: formId,
+            form_link: formLink
+          })
+          .eq('id', newInspection.id);
+
+        if (updateError) {
+          console.error('Error actualizando form_id y form_link:', updateError);
+          throw updateError;
+        }
+
+        // Enviar a Airtable y obtener el recordId
+        const airtableRecordId = await sendToAirtable({
+          guestName: formData.guestName,
+          inspectionDate: formData.inspectionDate,
+          property: formData.property,
+          inspectionStatus: 'Pending'
+        }, pdfUrl);
+
+        // Guardar el recordId de Airtable en Supabase
+        if (airtableRecordId) {
+          await supabase
+            .from('inspections')
+            .update({ airtable_record_id: airtableRecordId })
+            .eq('id', newInspection.id);
+        }
+
+        // Enviar email al invitado
+        await sendFormEmail('guest-form', {
+          to_email: formData.guestEmail,
+          to_name: formData.guestName,
+          from_name: 'Golf Cart Inspection System',
+          from_email: 'no-reply@email.golfcartinspection.app',
+          property: formData.property,
+          cart_type: formData.cartType,
+          cart_number: formData.cartNumber,
+          inspection_date: formData.inspectionDate,
+          form_link: `${window.location.origin}/inspection/${newInspection.id}`,
+          pdf_attachment: pdfUrl,
+          diagram_points: diagramPoints
+        });
+
+        setNotification({ type: 'success', message: '¡Enlace enviado exitosamente al huésped!' });
+        setFormData({
+          guestName: '',
+          guestEmail: '',
+          guestPhone: '',
+          inspectionDate: format(new Date(), 'yyyy-MM-dd'),
+          property: '',
+          cartType: '',
+          cartNumber: '',
+          observations: ''
+        });
+        setSelectedProperty(null);
+        setDiagramPoints([]);
+        setDiagramHistory([[]]);
+        setCurrentStep(0);
+        navigate('/thank-you');
+      } else {
+        // Actualizar inspección existente
         if (!id) {
           console.error('No se proporcionó un ID de inspección');
           throw new Error('ID de inspección no proporcionado');
@@ -335,49 +428,6 @@ function InspectionForm() {
         if (fetchError) {
           console.error('Error obteniendo datos de la inspección:', fetchError);
           throw fetchError;
-        }
-
-        let formId = inspectionData?.form_id;
-        let formLink = inspectionData?.form_link;
-        const existingRecordId = inspectionData?.airtable_record_id;
-
-        // Si no hay form_id, generamos uno
-        if (!formId) {
-          formId = `${formData.guestName.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`;
-          const pdfFileName = `${formData.property}_${formData.guestName.toLowerCase().replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
-          formLink = `https://rxudgxowradykfqfwhkp.supabase.co/storage/v1/object/public/pdfs/${pdfFileName}`;
-
-          // Actualizar la inspección con el nuevo form_id y form_link
-          const { error: updateError } = await supabase
-            .from('inspections')
-            .update({
-              form_id: formId,
-              form_link: formLink,
-              diagram_data: {
-                points: diagramPoints,
-                width: 600,
-                height: 400,
-                diagramType: selectedProperty?.diagramType
-              }
-            })
-            .eq('id', id);
-
-          if (updateError) {
-            console.error('Error actualizando datos de la inspección:', updateError);
-            throw updateError;
-          }
-        }
-
-        // Actualizar Airtable si tenemos recordId existente
-        if (existingRecordId) {
-          try {
-            await updateAirtablePdfLink(existingRecordId, pdfUrl);
-            console.log('PDF actualizado en Airtable para recordId:', existingRecordId);
-          } catch (updateError) {
-            console.error('Error actualizando PDF en Airtable:', updateError);
-          }
-        } else {
-          console.warn('No se encontró el recordId de Airtable para esta inspección. Esto es normal si la inspección fue creada antes de la integración con Airtable.');
         }
 
         // Actualizar la inspección con los datos finales
@@ -402,223 +452,52 @@ function InspectionForm() {
           throw updateError;
         }
 
-        // Enviar email al invitado y guardar en Airtable
-        // Convertir puntos a un formato más simple y seguro
-        const safePoints = diagramPoints.map(point => ({
-          x: Number(point.x),
-          y: Number(point.y),
-          color: point.color,
-          size: Number(point.size || 6)
-        }));
-
-        console.log('Puntos de diagrama para envío:', {
-          diagramPointsCount: safePoints.length,
-          diagramPointsExample: safePoints.slice(0, 3)
-        });
-
-        // Modificar el envío para usar el enlace del PDF
-        // 1. Enviar a Airtable y obtener el recordId
-        const newRecordId = await sendToAirtable({
-          guestName: formData.guestName,
-          inspectionDate: formData.inspectionDate,
-          property: formData.property,
-          inspectionStatus: 'Pending'
-        }, pdfUrl);
-
-        // 2. Guardar el recordId de Airtable en Supabase
-        if (newRecordId) {
-          await supabase
-            .from('inspections')
-            .update({ airtable_record_id: newRecordId })
-            .eq('id', id);
-        }
-
-        // 3. Enviar email al invitado
-        await sendFormEmail('guest-form', {
-          to_email: formData.guestEmail,
-          to_name: formData.guestName,
-          from_name: 'Golf Cart Inspection System',
-          from_email: 'no-reply@email.golfcartinspection.app',
-          property: formData.property,
-          cart_type: formData.cartType,
-          cart_number: formData.cartNumber,
-          inspection_date: formData.inspectionDate,
-          form_link: `${window.location.origin}/inspection/${id}`,
-          pdf_attachment: pdfUrl,
-          diagram_points: safePoints,
-          isCreationAlert: true
-        });
-
-        console.log('Detalles de puntos de diagrama:', {
-          diagramPointsCount: safePoints.length,
-          diagramPointsExample: safePoints.slice(0, 3),
-          diagramPointsTypes: safePoints.map(p => typeof p)
-        });
-
-        // Descargar versión local
-        try {
-          if (pdfData && pdfData.download && pdfData.download.blob) {
-            const downloadUrl = window.URL.createObjectURL(pdfData.download.blob);
-            const link = document.createElement('a');
-            link.href = downloadUrl;
-            link.download = pdfFilename;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            window.URL.revokeObjectURL(downloadUrl);
-          } else {
-            throw new Error('PDF data is not available for download');
-          }
-        } catch (downloadError) {
-          console.error('Error downloading PDF:', downloadError);
-          alert('Error downloading PDF. Please try again.');
-        }
-
-        setNotification({ type: 'success', message: '¡Enlace enviado exitosamente al huésped!' });
-        setFormData({
-          guestName: '',
-          guestEmail: '',
-          guestPhone: '',
-          inspectionDate: format(new Date(), 'yyyy-MM-dd'),
-          property: '',
-          cartType: '',
-          cartNumber: '',
-          observations: ''
-        });
-        setSelectedProperty(null);
-        setDiagramPoints([]);
-        setDiagramHistory([[]]);
-        setCurrentStep(0);
-        navigate('/thank-you');
-      } else {
-        // Actualizar inspección existente
-        const { error } = await supabase
-          .from('inspections')
-          .update({
-            observations: formData.observations,
-            signature_data: signaturePadRef.current?.toDataURL(),
-            status: 'completed',
-            completed_at: new Date().toISOString()
-          })
-          .eq('id', id);
-
-        if (error) throw error;
-
-        // Obtener datos de la inspección
-        const { data: inspectionData, error: fetchError } = await supabase
-          .from('inspections')
-          .select('form_id, form_link')
-          .eq('id', id)
-          .single();
-
-        let formId = inspectionData?.form_id;
-        let formLink = inspectionData?.form_link;
-        const pdfFileName = `rental_6_passenger_150_${formData.guestName.toLowerCase().replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
-
-        if (fetchError || !formId) {
-          console.error('Error obteniendo form_id:', fetchError);
-          // Generar un form_id si no existe
-          formId = `${formData.guestName.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`;
-
-          formLink = `https://lngsgyvpqhjmedjrycqw.supabase.co/storage/v1/object/public/pdfs/${pdfFileName}`;
-
-          await supabase
-            .from('inspections')
-            .update({
-              form_id: formId,
-              form_link: formLink
-            })
-            .eq('id', id);
-        }
-
-        // Recuperar el recordId real de Airtable desde Supabase
-        const { data: airtableRow } = await supabase
-          .from('inspections')
-          .select('airtable_record_id')
-          .eq('id', id)
-          .single();
-        const recordId = airtableRow?.airtable_record_id;
-        if (recordId) {
+        // Actualizar Airtable si tenemos recordId
+        if (inspectionData?.airtable_record_id) {
           try {
-            await updateAirtablePdfLink(recordId, pdfUrl);
+            await updateAirtablePdfLink(inspectionData.airtable_record_id, pdfUrl);
+            console.log('PDF actualizado en Airtable para recordId:', inspectionData.airtable_record_id);
           } catch (updateError) {
             console.error('Error actualizando PDF en Airtable:', updateError);
           }
-        } else {
-          console.error('No se encontró el recordId de Airtable en Supabase para esta inspección');
         }
 
-        // Cuando se firma un formulario (vista de invitado)
-        if (isGuestView) {
-          // Actualizar inspección existente
-          const { error } = await supabase
-            .from('inspections')
-            .update({
-              observations: formData.observations,
-              signature_data: signaturePadRef.current?.toDataURL(),
-              status: 'completed',
-              completed_at: new Date().toISOString()
-            })
-            .eq('id', id);
+        // Enviar correos
+        await Promise.all([
+          // Correo al huésped
+          sendFormEmail('completed-form', {
+            to_email: formData.guestEmail,
+            to_name: formData.guestName,
+            from_name: 'Golf Cart Inspection System',
+            from_email: 'no-reply@email.golfcartinspection.app',
+            property: formData.property,
+            cart_type: formData.cartType,
+            cart_number: formData.cartNumber,
+            inspection_date: formData.inspectionDate,
+            observations: formData.observations,
+            form_id: id,
+            isAdmin: false
+          }),
 
-          if (error) throw error;
+          // Correo a administradores
+          sendFormEmail('completed-form', {
+            to_email: formData.guestEmail,
+            to_name: formData.guestName,
+            from_name: 'Golf Cart Inspection System',
+            from_email: 'no-reply@email.golfcartinspection.app',
+            property: formData.property,
+            cart_type: formData.cartType,
+            cart_number: formData.cartNumber,
+            inspection_date: formData.inspectionDate,
+            observations: formData.observations,
+            formId: id,
+            pdf_attachment: pdfUrl,
+            isAdmin: true,
+            skipAdminAlert: true
+          })
+        ]);
 
-          // Ya que form_id no existe en la tabla, generamos un ID único para el PDF
-
-          const pdfFileName = `${formData.property}_${formData.guestName.toLowerCase().replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
-
-          // Restaurar la funcionalidad de descarga del PDF
-          if (pdfData && pdfData.download && pdfData.download.blob) {
-            try {
-              const downloadUrl = window.URL.createObjectURL(pdfData.download.blob);
-              const link = document.createElement('a');
-              link.href = downloadUrl;
-              link.download = pdfFileName;
-              document.body.appendChild(link);
-              link.click();
-              document.body.removeChild(link);
-              window.URL.revokeObjectURL(downloadUrl);
-              console.log('PDF descargado correctamente');
-
-              // Enviar correos de forma asíncrona
-              await sendFormEmail('completed-form', {
-                to_email: formData.guestEmail,
-                to_name: formData.guestName,
-                from_name: 'Golf Cart Inspection System',
-                from_email: 'no-reply@email.golfcartinspection.app',
-                property: formData.property,
-                cart_type: formData.cartType,
-                cart_number: formData.cartNumber,
-                inspection_date: formData.inspectionDate,
-                guestName: formData.guestName,
-                guestEmail: formData.guestEmail,
-                observations: formData.observations,
-                form_id: id,
-                isAdmin: false // Correo al huésped
-              });
-
-              await sendFormEmail('completed-form', {
-                to_email: formData.guestEmail, // Usar el email del huésped real
-                to_name: formData.guestName, // Usar el nombre del huésped real
-                from_name: 'Golf Cart Inspection System',
-                from_email: 'no-reply@email.golfcartinspection.app',
-                property: formData.property,
-                cart_type: formData.cartType,
-                cart_number: formData.cartNumber,
-                inspection_date: formData.inspectionDate,
-                observations: formData.observations,
-                formId: id,
-                pdf_attachment: pdfUrl, // Incluir URL del PDF para administradores
-                isAdmin: true, // Correo a administradores
-                skipAdminAlert: true // Evitar envío duplicado de alertas
-              });
-
-              navigate('/thank-you');
-            } catch (downloadError) {
-              console.error('Error al descargar PDF o enviar correos:', downloadError);
-            }
-          }
-        }
+        navigate('/thank-you');
       }
     } catch (error) {
       console.error('Error submitting form:', error);
