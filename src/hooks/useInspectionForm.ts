@@ -1,7 +1,8 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { Property, Point, FormData } from '../types';
+import SignaturePad from 'react-signature-canvas';
+import { Property, Point, FormData, PROPERTIES } from '../types';
 import { supabase, saveDiagramMarks, getDiagramMarks, uploadPDF } from '../lib/supabase';
 import { sendFormEmail } from '../lib/email';
 import { sendToAirtable, updateAirtablePdfLink } from '../components/AirtableService';
@@ -29,10 +30,114 @@ export function useInspectionForm(id?: string) {
   const [currentStep, setCurrentStep] = useState(0);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string; } | null>(null);
 
-  const signaturePadRef = useRef<any>(null);
+  const signaturePadRef = useRef<SignaturePad>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const formContentRef = useRef<HTMLDivElement>(null);
   const loadingRef = useRef(false);
+
+  // Cargar marcas cuando se selecciona una propiedad
+  useEffect(() => {
+    if (selectedProperty && !isGuestView && !id) {
+      loadDiagramMarks(selectedProperty.diagramType).catch(error => {
+        console.error('Error loading default diagram marks:', error);
+      });
+    }
+  }, [selectedProperty, isGuestView, id]);
+
+  // Cargar inspección existente
+  useEffect(() => {
+    if (id && !loadingRef.current) {
+      setIsGuestView(true);
+      loadInspection(id);
+    }
+  }, [id]);
+
+  const loadInspection = async (inspectionId: string) => {
+    if (loadingRef.current) return;
+
+    loadingRef.current = true;
+    setIsLoading(true);
+
+    try {
+      const { data: inspection, error } = await supabase
+        .from('inspections')
+        .select('*')
+        .eq('id', inspectionId)
+        .single();
+
+      if (error) throw error;
+
+      if (inspection) {
+        setFormData({
+          guestName: inspection.guest_name,
+          guestEmail: inspection.guest_email,
+          guestPhone: inspection.guest_phone,
+          inspectionDate: inspection.inspection_date,
+          property: inspection.property,
+          cartType: inspection.cart_type,
+          cartNumber: inspection.cart_number,
+          observations: inspection.observations || '',
+        });
+
+        const property = PROPERTIES.find(p => p.id === inspection.property);
+        if (property) {
+          setSelectedProperty(property);
+        }
+
+        if (inspection.diagram_data) {
+          const diagramData = inspection.diagram_data as { points: Point[] };
+          if (diagramData.points && diagramData.points.length > 0) {
+            const uniquePoints = diagramData.points.filter((point, index, self) =>
+              index === self.findIndex(p => p.x === point.x && p.y === point.y && p.color === point.color)
+            );
+
+            setDiagramPoints(uniquePoints);
+            const newHistory = uniquePoints.reduce<Point[][]>(
+              (history, point) => {
+                const lastStep = history[history.length - 1] || [];
+                return [...history, [...lastStep, point]];
+              },
+              [[]]
+            );
+            setDiagramHistory(newHistory);
+            setCurrentStep(newHistory.length - 1);
+          }
+        }
+
+        if (inspection.status === 'completed') {
+          navigate('/thank-you');
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('Error loading inspection:', error);
+      alert('Error loading inspection. Please try again.');
+      navigate('/');
+    } finally {
+      setIsLoading(false);
+      loadingRef.current = false;
+    }
+  };
+
+  const loadDiagramMarks = async (diagramName: string) => {
+    try {
+      const points = await getDiagramMarks(diagramName);
+      if (points.length > 0) {
+        setDiagramPoints(points);
+        const newHistory = points.reduce<Point[][]>(
+          (history, point) => {
+            const lastStep = history[history.length - 1] || [];
+            return [...history, [...lastStep, point]];
+          },
+          [[]]
+        );
+        setDiagramHistory(newHistory);
+        setCurrentStep(newHistory.length - 1);
+      }
+    } catch (error) {
+      console.error('Error loading diagram marks:', error);
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -147,9 +252,9 @@ export function useInspectionForm(id?: string) {
       }
 
       if (!isGuestView) {
-        await handleNewInspection(pdfUrl, pdfData);
+        await handleNewInspection(pdfUrl);
       } else {
-        await handleExistingInspection(pdfUrl, pdfData);
+        await handleExistingInspection(pdfUrl);
       }
     } catch (error) {
       console.error('Error submitting form:', error);
@@ -159,7 +264,7 @@ export function useInspectionForm(id?: string) {
     }
   };
 
-  const handleNewInspection = async (pdfUrl: string, pdfData: any) => {
+  const handleNewInspection = async (pdfUrl: string) => {
     // Crear nueva inspección
     const { data: newInspection, error: createError } = await supabase
       .from('inspections')
@@ -234,7 +339,7 @@ export function useInspectionForm(id?: string) {
     navigate('/thank-you');
   };
 
-  const handleExistingInspection = async (pdfUrl: string, pdfData: any) => {
+  const handleExistingInspection = async (pdfUrl: string) => {
     if (!id) {
       throw new Error('ID de inspección no proporcionado');
     }
