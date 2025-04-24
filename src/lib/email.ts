@@ -15,6 +15,8 @@ export interface EmailParams {
   observations?: string;
   diagram_base64?: string;
   formId?: string;
+  form_id?: string; // Alias para formId
+  guestName?: string; // Alias para to_name
   isAdmin?: boolean;
   skipAdminAlert?: boolean; // Evita el envío automático de alertas a administradores
   adminAlert?: boolean; // Indica si este correo es una alerta para administradores

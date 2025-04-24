@@ -5,6 +5,7 @@ import { Download } from 'lucide-react';
 
 interface PDFGeneratorProps {
   contentRef: React.RefObject<HTMLDivElement>;
+  waitForComplete?: boolean;
 }
 
 interface PDFVersion {

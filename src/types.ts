@@ -50,6 +50,17 @@ export interface Inspection {
   completed_at?: string;
 }
 
+export interface FormData {
+  guestName: string;
+  guestEmail: string;
+  guestPhone: string;
+  inspectionDate: string;
+  property: string;
+  cartType?: string;
+  cartNumber: string;
+  observations: string;
+}
+
 export const PROPERTIES: Property[] = [
   { 
     id: 'rental_6_passenger_150', 
