@@ -333,7 +333,7 @@ function InspectionForm() {
 
         let formId = inspectionData?.form_id;
         let formLink = inspectionData?.form_link;
-        const recordId = inspectionData?.airtable_record_id;
+        const existingRecordId = inspectionData?.airtable_record_id;
 
         // Si no hay form_id, generamos uno
         if (!formId) {
@@ -351,11 +351,11 @@ function InspectionForm() {
             .eq('id', id);
         }
 
-        // Actualizar Airtable si tenemos recordId
-        if (recordId) {
+        // Actualizar Airtable si tenemos recordId existente
+        if (existingRecordId) {
           try {
-            await updateAirtablePdfLink(recordId, pdfUrl);
-            console.log('PDF actualizado en Airtable para recordId:', recordId);
+            await updateAirtablePdfLink(existingRecordId, pdfUrl);
+            console.log('PDF actualizado en Airtable para recordId:', existingRecordId);
           } catch (updateError) {
             console.error('Error actualizando PDF en Airtable:', updateError);
           }
@@ -396,7 +396,7 @@ function InspectionForm() {
 
         // Modificar el envío para usar el enlace del PDF
         // 1. Enviar a Airtable y obtener el recordId
-        const recordId = await sendToAirtable({
+        const newRecordId = await sendToAirtable({
           guestName: formData.guestName,
           inspectionDate: formData.inspectionDate,
           property: formData.property,
@@ -404,10 +404,10 @@ function InspectionForm() {
         }, pdfUrl);
 
         // 2. Guardar el recordId de Airtable en Supabase
-        if (recordId) {
+        if (newRecordId) {
           await supabase
             .from('inspections')
-            .update({ airtable_record_id: recordId })
+            .update({ airtable_record_id: newRecordId })
             .eq('id', id);
         }
 
