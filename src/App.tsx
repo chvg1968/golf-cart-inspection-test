@@ -320,31 +320,65 @@ function InspectionForm() {
       }
 
       if (!isGuestView) {
-        // Crear nueva inspección
-        const { data: inspection, error } = await supabase
+        // Obtener datos de la inspección
+        const { data: inspectionData, error: fetchError } = await supabase
           .from('inspections')
-          .insert([
-            {
-              guest_name: formData.guestName,
-              guest_email: formData.guestEmail,
-              guest_phone: formData.guestPhone,
-              inspection_date: formData.inspectionDate,
-              property: formData.property,
-              cart_type: formData.cartType,
-              cart_number: formData.cartNumber,
-              diagram_data: selectedProperty ? {
-                points: diagramPoints,
-                width: 600,
-                height: 400,
-                diagramType: selectedProperty.diagramType
-              } : null,
-              status: 'pending'
-            }
-          ])
-          .select()
+          .select('form_id, form_link, airtable_record_id')
+          .eq('id', id)
           .single();
 
-        if (error) throw error;
+        if (fetchError) {
+          console.error('Error obteniendo datos de la inspección:', fetchError);
+        }
+
+        let formId = inspectionData?.form_id;
+        let formLink = inspectionData?.form_link;
+        const recordId = inspectionData?.airtable_record_id;
+
+        // Si no hay form_id, generamos uno
+        if (!formId) {
+          formId = `${formData.guestName.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`;
+          const pdfFileName = `${formData.property}_${formData.guestName.toLowerCase().replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+          formLink = `https://lngsgyvpqhjmedjrycqw.supabase.co/storage/v1/object/public/pdfs/${pdfFileName}`;
+
+          // Actualizar la inspección con el nuevo form_id y form_link
+          await supabase
+            .from('inspections')
+            .update({
+              form_id: formId,
+              form_link: formLink
+            })
+            .eq('id', id);
+        }
+
+        // Actualizar Airtable si tenemos recordId
+        if (recordId) {
+          try {
+            await updateAirtablePdfLink(recordId, pdfUrl);
+            console.log('PDF actualizado en Airtable para recordId:', recordId);
+          } catch (updateError) {
+            console.error('Error actualizando PDF en Airtable:', updateError);
+          }
+        } else {
+          console.warn('No se encontró el recordId de Airtable para esta inspección. Esto es normal si la inspección fue creada antes de la integración con Airtable.');
+        }
+
+        // Actualizar la inspección con los datos finales
+        const { error: updateError } = await supabase
+          .from('inspections')
+          .update({
+            observations: formData.observations,
+            signature_data: signaturePadRef.current?.toDataURL(),
+            status: 'completed',
+            completed_at: new Date().toISOString(),
+            pdf_url: pdfUrl // Guardar la URL del PDF
+          })
+          .eq('id', id);
+
+        if (updateError) {
+          console.error('Error actualizando la inspección:', updateError);
+          throw updateError;
+        }
 
         // Enviar email al invitado y guardar en Airtable
         // Convertir puntos a un formato más simple y seguro
@@ -374,7 +408,7 @@ function InspectionForm() {
           await supabase
             .from('inspections')
             .update({ airtable_record_id: recordId })
-            .eq('id', inspection.id);
+            .eq('id', id);
         }
 
         // 3. Enviar email al invitado
@@ -387,7 +421,7 @@ function InspectionForm() {
           cart_type: formData.cartType,
           cart_number: formData.cartNumber,
           inspection_date: formData.inspectionDate,
-          form_link: `${window.location.origin}/inspection/${inspection.id}`,
+          form_link: `${window.location.origin}/inspection/${id}`,
           pdf_attachment: pdfUrl,
           diagram_points: safePoints,
           isCreationAlert: true
