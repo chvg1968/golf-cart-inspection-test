@@ -11,7 +11,7 @@ interface InspectionFormData {
     formId?: string;
 }
 
-export async function sendToAirtable(formData: InspectionFormData, pdfLink: string) {
+export async function sendToAirtable(formData: InspectionFormData, pdfLink: string, isSigned?: boolean) {
     // Solo enviar a Airtable si hay un PDF link (implica que está firmado)
     if (!pdfLink) {
         console.log('No hay PDF firmado, no se envía a Airtable');
@@ -51,6 +51,7 @@ export async function sendToAirtable(formData: InspectionFormData, pdfLink: stri
     try {
         interface AirtableFields {
             'Form Id': string;
+            'Status': string;
             'Guest Name': string;
             'Property': string;
             'Inspection Date': string;
@@ -81,12 +82,13 @@ export async function sendToAirtable(formData: InspectionFormData, pdfLink: stri
             'Inspection Date': formData.inspectionDate,
             'Guest Name': formData.guestName,
             'Property': formData.property,
-            'PDF Link': finalPdfLink
+            'PDF Link': finalPdfLink,
+            'Status': isSigned ? 'Signed' : 'Pending'
         };
 
-        // Validar que todos los campos tengan valor
+        // Validar que todos los campos tengan valor salvo Status
         const emptyFields = Object.entries(fields)
-            .filter(([, value]) => !value)
+            .filter(([key, value]) => !value && key !== 'Status')
             .map(([key]) => key);
 
         if (emptyFields.length > 0) {

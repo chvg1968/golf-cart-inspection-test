@@ -269,30 +269,15 @@ function InspectionForm() {
 
   const handleUndo = () => {
     if (currentStep > 0) {
-      const previousPoints = diagramHistory[currentStep - 1] || [];
-      setCurrentStep(prev => prev - 1);
-      setDiagramPoints(previousPoints);
-
-      if (selectedProperty) {
-        saveDiagramMarks(selectedProperty.diagramType, previousPoints).catch(error => {
-          console.error('Error saving diagram marks after undo:', error);
-        });
-      }
+      setCurrentStep(currentStep - 1);
+      setDiagramPoints(diagramHistory[currentStep - 1]);
     }
   };
 
-  const clearCanvas = () => {
-    if (!isGuestView) {
-      setDiagramPoints([]);
-      setDiagramHistory([[]]);
-      setCurrentStep(0);
-
-      if (selectedProperty) {
-        saveDiagramMarks(selectedProperty.diagramType, []).catch(error => {
-          console.error('Error clearing diagram marks:', error);
-        });
-      }
-    }
+  const handleClear = () => {
+    setDiagramPoints([]);
+    setDiagramHistory([[]]);
+    setCurrentStep(0);
   };
 
   const clearSignature = () => {
@@ -421,7 +406,7 @@ function InspectionForm() {
                 guestName: formData.guestName,
                 inspectionDate: formData.inspectionDate,
                 property: formData.property
-              }, pdfUrl)
+              }, pdfUrl, signaturePadRef.current?.toData()?.length > 0)
             ]);
 
             console.log('Detalles de puntos de diagrama:', {
