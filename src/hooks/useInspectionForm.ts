@@ -1,34 +1,40 @@
-import { useState, useRef, useEffect } from 'react';
+import { useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { format } from 'date-fns';
 import SignaturePad from 'react-signature-canvas';
-import { Property, Point, FormData, PROPERTIES } from '../types';
-import { supabase, saveDiagramMarks, getDiagramMarks, uploadPDF } from '../lib/supabase';
+import { Point } from '../types';
+import { supabase, getDiagramMarks, uploadPDF } from '../lib/supabase';
 import { sendFormEmail } from '../lib/email';
 import { sendToAirtable, updateAirtablePdfLink } from '../components/AirtableService';
 import { generateFormPDF } from '../components/PDFGenerator';
+import { useStore } from '../store/useStore';
+import { PROPERTIES } from '../types';
 
 export function useInspectionForm(id?: string) {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState<FormData>({
-    guestName: '',
-    guestEmail: '',
-    guestPhone: '',
-    inspectionDate: format(new Date(), 'yyyy-MM-dd'),
-    property: '',
-    cartType: '',
-    cartNumber: '',
-    observations: '',
-  });
-
-  const [isGuestView, setIsGuestView] = useState(false);
-  const [isSending, setIsSending] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
-  const [diagramPoints, setDiagramPoints] = useState<Point[]>([]);
-  const [diagramHistory, setDiagramHistory] = useState<Point[][]>([[]]);
-  const [currentStep, setCurrentStep] = useState(0);
-  const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string; } | null>(null);
+  const {
+    formData,
+    setFormData,
+    resetFormData,
+    isGuestView,
+    setIsGuestView,
+    isSending,
+    setIsSending,
+    isLoading,
+    setIsLoading,
+    selectedProperty,
+    setSelectedProperty,
+    diagramPoints,
+    setDiagramPoints,
+    diagramHistory,
+    setDiagramHistory,
+    currentStep,
+    setCurrentStep,
+    notification,
+    setNotification,
+    handleUndo,
+    handleClear,
+    handlePointsChange
+  } = useStore();
 
   const signaturePadRef = useRef<SignaturePad>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -141,73 +147,23 @@ export function useInspectionForm(id?: string) {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData({ [name]: value });
   };
 
   const handlePropertyChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const property = PROPERTIES.find(p => p.id === e.target.value);
     if (property) {
       setSelectedProperty(property);
-      setFormData(prev => ({
-        ...prev,
+      setFormData({
         property: property.id,
         cartType: property.cartType,
         cartNumber: property.cartNumber
-      }));
+      });
       setDiagramPoints([]);
       setDiagramHistory([[]]);
       setCurrentStep(0);
 
       await loadDiagramMarks(property.diagramType);
-    }
-  };
-
-  const handlePointsChange = async (newPoints: Point[]) => {
-    const uniquePoints = newPoints.filter((point, index, self) =>
-      index === self.findIndex(p => p.x === point.x && p.y === point.y && p.color === point.color)
-    );
-
-    setDiagramPoints(uniquePoints);
-    setDiagramHistory(prev => {
-      const newHistory = [...prev.slice(0, currentStep + 1), [...uniquePoints]];
-      return newHistory;
-    });
-    setCurrentStep(prev => prev + 1);
-
-    if (selectedProperty && !isGuestView) {
-      try {
-        await saveDiagramMarks(selectedProperty.diagramType, uniquePoints);
-      } catch (error) {
-        console.error('Error saving diagram marks:', error);
-      }
-    }
-  };
-
-  const handleUndo = () => {
-    if (currentStep > 0) {
-      const previousPoints = diagramHistory[currentStep - 1] || [];
-      setCurrentStep(prev => prev - 1);
-      setDiagramPoints(previousPoints);
-
-      if (selectedProperty) {
-        saveDiagramMarks(selectedProperty.diagramType, previousPoints).catch(error => {
-          console.error('Error saving diagram marks after undo:', error);
-        });
-      }
-    }
-  };
-
-  const handleClear = () => {
-    if (!isGuestView) {
-      setDiagramPoints([]);
-      setDiagramHistory([[]]);
-      setCurrentStep(0);
-
-      if (selectedProperty) {
-        saveDiagramMarks(selectedProperty.diagramType, []).catch(error => {
-          console.error('Error clearing diagram marks:', error);
-        });
-      }
     }
   };
 
@@ -335,7 +291,7 @@ export function useInspectionForm(id?: string) {
     });
 
     setNotification({ type: 'success', message: '¡Enlace enviado exitosamente al huésped!' });
-    resetForm();
+    resetFormData();
     navigate('/thank-you');
   };
 
@@ -414,30 +370,12 @@ export function useInspectionForm(id?: string) {
     navigate('/thank-you');
   };
 
-  const resetForm = () => {
-    setFormData({
-      guestName: '',
-      guestEmail: '',
-      guestPhone: '',
-      inspectionDate: format(new Date(), 'yyyy-MM-dd'),
-      property: '',
-      cartType: '',
-      cartNumber: '',
-      observations: ''
-    });
-    setSelectedProperty(null);
-    setDiagramPoints([]);
-    setDiagramHistory([[]]);
-    setCurrentStep(0);
-  };
-
   return {
     formData,
     isGuestView,
     isSending,
     isLoading,
     selectedProperty,
-    diagramPoints,
     diagramHistory,
     currentStep,
     notification,
