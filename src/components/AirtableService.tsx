@@ -9,9 +9,38 @@ interface InspectionFormData {
     inspectionDate: string;
     property: string;
     formId?: string;
+    inspectionStatus: string
 }
 
-export async function sendToAirtable(formData: InspectionFormData, pdfLink: string, isSigned?: boolean) {
+// Interfaces para las respuestas de Airtable
+interface AirtableRecord {
+    id: string;
+    createdTime: string;
+    fields: Record<string, unknown>; // Usamos unknown para flexibilidad, pero se podría definir más estrictamente
+}
+
+interface AirtableErrorResponse {
+    error?: {
+        type: string;
+        message: string;
+    };
+    message?: string; // A veces Airtable devuelve un 'message' en lugar de 'error'
+}
+
+interface AirtableSearchResponse extends AirtableErrorResponse {
+    records?: AirtableRecord[];
+}
+
+interface AirtableCreateResponse extends AirtableRecord, AirtableErrorResponse {}
+
+interface AirtableUpdateResponse extends AirtableRecord, AirtableErrorResponse {}
+
+
+/**
+ * Crea un registro en Airtable y retorna el recordId (id de Airtable)
+ * @returns El recordId de Airtable, o null si falla
+ */
+export async function sendToAirtable(formData: InspectionFormData, pdfLink: string): Promise<string | null> {
     // Solo enviar a Airtable si hay un PDF link (implica que está firmado)
     if (!pdfLink) {
         console.log('No hay PDF firmado, no se envía a Airtable');
@@ -23,7 +52,7 @@ export async function sendToAirtable(formData: InspectionFormData, pdfLink: stri
     // Validar que el pdfLink sea una URL válida
     try {
         new URL(pdfLink);
-    } catch (e) {
+    } catch {
         console.error(`El pdfLink no es una URL válida: ${pdfLink}`);
         return null;
     }
@@ -47,11 +76,11 @@ export async function sendToAirtable(formData: InspectionFormData, pdfLink: stri
         baseId,
         tableName
     });
-    
+
     try {
         interface AirtableFields {
             'Form Id': string;
-            'Status': string;
+            'Inspection Status': string;
             'Guest Name': string;
             'Property': string;
             'Inspection Date': string;
@@ -63,7 +92,7 @@ export async function sendToAirtable(formData: InspectionFormData, pdfLink: stri
         
         // Si el pdfLink parece ser un ID o path relativo, construir la URL completa
         if (!pdfLink.startsWith('http')) {
-            const supabaseProjectId = 'rxudgxowradykfqfwhkp'; // Actualizar este ID
+            const supabaseProjectId = 'lngsgyvpqhjmedjrycqw';
             const pdfFileName = `${formData.property.toLowerCase().replace(/\s+/g, '_')}_${formData.guestName.toLowerCase().replace(/\s+/g, '_')}_${formData.inspectionDate.replace(/-/g, '_')}.pdf`;
             finalPdfLink = `https://${supabaseProjectId}.supabase.co/storage/v1/object/public/pdfs/${pdfFileName}`;
             console.log('Construyendo URL completa para PDF:', finalPdfLink);
@@ -72,23 +101,23 @@ export async function sendToAirtable(formData: InspectionFormData, pdfLink: stri
         // Verificar que finalPdfLink sea una URL válida
         try {
             new URL(finalPdfLink);
-        } catch (e) {
+        } catch {
             console.error(`El finalPdfLink no es una URL válida: ${finalPdfLink}`);
             return null;
         }
 
         const fields: AirtableFields = {
             'Form Id': formData.formId || generateFormId(formData.guestName),
+            'Inspection Status': formData.inspectionStatus || 'Pending',
             'Inspection Date': formData.inspectionDate,
             'Guest Name': formData.guestName,
             'Property': formData.property,
-            'PDF Link': finalPdfLink,
-            'Status': isSigned ? 'Signed' : 'Pending'
+            'PDF Link': finalPdfLink
         };
 
-        // Validar que todos los campos tengan valor salvo Status
+        // Validar que todos los campos tengan valor
         const emptyFields = Object.entries(fields)
-            .filter(([key, value]) => !value && key !== 'Status')
+            .filter(([, value]) => !value)
             .map(([key]) => key);
 
         if (emptyFields.length > 0) {
@@ -109,13 +138,27 @@ export async function sendToAirtable(formData: InspectionFormData, pdfLink: stri
         };
 
         // Verificar si ya existe un registro con el mismo Form Id
-        const searchUrl = `${baseUrl}?filterByFormula=${encodeURIComponent(`{Form Id}='${fields['Form Id']}'`)}`;        
+        const searchUrl = `${baseUrl}?filterByFormula=${encodeURIComponent(`{Form Id}='${fields['Form Id']}'`)}`;
         const searchResponse = await fetch(searchUrl, { headers });
-        const searchData = await searchResponse.json();
+        // Tipar la respuesta JSON
+        const searchData: AirtableSearchResponse = await searchResponse.json();
+
+        if (!searchResponse.ok) {
+             console.error('Error en la búsqueda de Airtable:', {
+                status: searchResponse.status,
+                statusText: searchResponse.statusText,
+                error: searchData.error || searchData.message,
+                formId: fields['Form Id']
+            });
+            // Lanzar un error o devolver null según la lógica deseada
+             throw new Error(`Error buscando en Airtable: ${searchData.error?.message || searchData.message || 'Error desconocido'}`);
+        }
+
 
         if (searchData.records && searchData.records.length > 0) {
             console.log('El registro ya existe en Airtable');
-            return searchData.records[0];
+            // Devuelve el recordId existente
+            return searchData.records[0].id;
         }
 
         // Crear nuevo registro si no existe
@@ -130,39 +173,56 @@ export async function sendToAirtable(formData: InspectionFormData, pdfLink: stri
             }
         );
 
-        const responseData = await response.json();
-        console.log('Respuesta de Airtable:', { 
-            status: response.status, 
+        // Tipar la respuesta JSON
+        const responseData: AirtableCreateResponse = await response.json();
+        console.log('Respuesta de Airtable:', {
+            status: response.status,
             statusText: response.statusText,
             data: responseData
         });
 
         if (!response.ok) {
-            console.error('Error detallado de Airtable:', {
+            console.error('Error detallado de Airtable al crear:', {
                 status: response.status,
                 statusText: response.statusText,
-                error: responseData.error,
+                error: responseData.error || responseData.message, // Usar error o message
                 fields: fields
             });
-            throw new Error(`Error Airtable: ${responseData.error?.message || 'Error desconocido'}`);
+            throw new Error(`Error Airtable: ${responseData.error?.message || responseData.message || 'Error desconocido'}`);
         }
 
-        return responseData;
+        // Devuelve el recordId del nuevo registro creado
+        return responseData.id;
 
-    } catch (error) {
-        console.error('Error enviando datos a Airtable:', error);
-        throw error;
+    } catch (error: unknown) { // Rename 'e' to 'error' and type it
+        console.error('Error enviando datos a Airtable:', error); // Use 'error'
+        // Puedes hacer un manejo más específico del error si es necesario
+        if (error instanceof Error) {
+             // Optionally use error.message or error.stack here
+             throw new Error(`Error procesando la solicitud a Airtable: ${error.message}`);
+        } else {
+             throw new Error('Ocurrió un error desconocido al enviar a Airtable');
+        }
+        // O simplemente relanzar el error original si prefieres
+        // throw error;
+        // O devolver null si esa es la lógica deseada en caso de error
+        // return null;
     }
 }
 
-export const updateAirtablePdfLink = async (inspectionId: string, pdfUrl: string) => {
+/**
+ * Actualiza el PDF y el status en Airtable usando el recordId directamente
+ * @param recordId El id de Airtable del registro a actualizar
+ * @param pdfUrl   El enlace al PDF firmado
+ */
+export const updateAirtablePdfLink = async (recordId: string, pdfUrl: string): Promise<boolean> => {
   try {
-    console.log(`Actualizando enlace PDF en Airtable para inspección ${inspectionId} con URL: ${pdfUrl}`);
+    console.log(`Actualizando enlace PDF en Airtable para recordId ${recordId} con URL: ${pdfUrl}`);
     
     // Validar que pdfUrl sea una URL válida
     try {
         new URL(pdfUrl);
-    } catch (e) {
+    } catch {
         console.error(`La URL del PDF no es válida: ${pdfUrl}`);
         return false;
     }
@@ -181,48 +241,58 @@ export const updateAirtablePdfLink = async (inspectionId: string, pdfUrl: string
     }
     
     const AIRTABLE_API_URL = `https://api.airtable.com/v0/${baseId}/${tableName}`;
-    
-    // Buscar el registro en Airtable usando el ID de inspección
-    const response = await fetch(`${AIRTABLE_API_URL}?filterByFormula=FIND("${inspectionId}",{Form Id})`, {
-      method: 'GET',
+
+    // Actualizar el registro con el enlace del PDF usando el recordId directamente
+    const updateResponse = await fetch(`${AIRTABLE_API_URL}/${recordId}`, {
+      method: 'PATCH',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
-      }
-    });
-    
-    const data = await response.json();
-    
-    if (data.records && data.records.length > 0) {
-      const recordId = data.records[0].id;
-      
-      console.log(`Encontrado registro en Airtable con ID: ${recordId}, actualizando con PDF URL: ${pdfUrl}`);
-      
-      // Actualizar el registro con el enlace del PDF
-      const updateResponse = await fetch(`${AIRTABLE_API_URL}/${recordId}`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        fields: {
+          'PDF Link': pdfUrl,
+          'Inspection Status': 'Signed'
         },
-        body: JSON.stringify({
-          fields: {
-            'PDF Link': pdfUrl
-          }
-        })
+        typecast: true
+      })
+    });
+
+    console.log('PATCH status:', updateResponse.status);
+    // Tipar la respuesta JSON
+    const updateData: AirtableUpdateResponse = await updateResponse.json();
+    console.log('PATCH response:', updateData);
+
+    // Verificar si la respuesta contiene un error de Airtable
+    if (!updateResponse.ok || updateData.error || updateData.message) {
+      console.error('Error de Airtable al actualizar:', {
+          status: updateResponse.status,
+          statusText: updateResponse.statusText,
+          error: updateData.error || updateData.message,
+          recordId: recordId
       });
-      
-      const updateData = await updateResponse.json();
-      console.log('Respuesta de actualización de Airtable:', updateData);
-      
-      console.log('Enlace PDF actualizado en Airtable');
-      return true;
-    } else {
-      console.warn(`No se encontró registro en Airtable para la inspección ${inspectionId}`);
       return false;
+    } else {
+      console.log('Respuesta de actualización de Airtable:', updateData);
+      // Asegurarse de que fields exista antes de acceder a él
+      if (updateData.fields && updateData.fields['Inspection Status'] !== 'Signed') {
+        console.error('Status no se actualizó correctamente:', updateData.fields['Inspection Status']);
+        return false;
+      } else if (updateData.fields) { // Verificar que fields exista
+        console.log('¡Status actualizado correctamente a Signed!');
+        return true;
+      } else {
+         console.warn('La respuesta de Airtable no incluyó el campo "fields" actualizado.');
+         // Decide si esto debe considerarse un éxito o un fallo
+         return false; // O true dependiendo de la lógica requerida
+      }
     }
-  } catch (error) {
-    console.error('Error al actualizar enlace PDF en Airtable:', error);
+  } catch (error: unknown) { // Rename 'e' to 'error' and type it
+    console.error('Error al actualizar enlace PDF en Airtable:', error); // Use 'error'
+     // Puedes hacer un manejo más específico del error si es necesario
+     if (error instanceof Error) {
+         console.error(`Error específico: ${error.message}`); // Use error.message
+     }
     return false;
   }
 }
