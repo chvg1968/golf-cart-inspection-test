@@ -17,7 +17,6 @@ function InspectionForm() {
     isSending,
     isLoading,
     selectedProperty,
-    diagramPoints,
     diagramHistory,
     currentStep,
     notification,
