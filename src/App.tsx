@@ -12,7 +12,7 @@ import { LoadingSpinner } from './components/LoadingSpinner';
 import { ThankYou } from './components/ThankYou';
 import { sendFormEmail } from './lib/email';
 import { sendToAirtable, updateAirtablePdfLink } from './components/AirtableService';
-import { generateFormPDF, PDFButton } from './components/PDFGenerator';
+import { generateFormPDF } from './components/PDFGenerator';
 import './styles/orientation-warning.css';
 
 interface PDFVersion {
@@ -120,76 +120,59 @@ function InspectionForm() {
     setIsLoading(true);
 
     try {
-      // Cargar la inspección con los datos del diagrama relacionado
       const { data: inspection, error } = await supabase
         .from('inspections')
-        .select(`
-          *,
-          diagram_marks:diagram_marks_id (
-            diagram_name,
-            points
-          )
-        `)
+        .select('*')
         .eq('id', inspectionId)
         .single();
 
       if (error) throw error;
-      
-      // Establecer los datos del formulario
-      setFormData({
-        guestName: inspection.guest_name,
-        guestEmail: inspection.guest_email,
-        guestPhone: inspection.guest_phone,
-        inspectionDate: inspection.inspection_date,
-        property: inspection.property,
-        cartType: inspection.cart_type,
-        cartNumber: inspection.cart_number,
-        observations: inspection.observations || ''
-      });
 
-      // Establecer la propiedad seleccionada para el canvas
-      const propertyObj = PROPERTIES.find(p => p.id === inspection.property);
-      setSelectedProperty(propertyObj || null);
-      
-      // Establecer los puntos del diagrama
-      // Primero intentamos obtenerlos de la relación diagram_marks
-      if (inspection.diagram_marks && inspection.diagram_marks.points) {
-        setDiagramPoints(inspection.diagram_marks.points);
-        // Crear historial para deshacer
-        const uniquePoints = inspection.diagram_marks.points;
-        const newHistory = uniquePoints.reduce<Point[][]>(
-          (history, point) => {
-            const lastStep = history[history.length - 1] || [];
-            return [...history, [...lastStep, point]];
-          },
-          [[]]
-        );
-        setDiagramHistory(newHistory);
-        setCurrentStep(newHistory.length - 1);
-      } 
-      // Por compatibilidad, también verificamos diagram_data
-      else if (inspection.diagram_data) {
-        const diagramData = inspection.diagram_data as DiagramData;
-        if (diagramData.points && diagramData.points.length > 0) {
-          const uniquePoints = diagramData.points.filter((point, index, self) =>
-            index === self.findIndex(p => p.x === point.x && p.y === point.y && p.color === point.color)
-          );
-          setDiagramPoints(uniquePoints);
-          const newHistory = uniquePoints.reduce<Point[][]>(
-            (history, point) => {
-              const lastStep = history[history.length - 1] || [];
-              return [...history, [...lastStep, point]];
-            },
-            [[]]
-          );
-          setDiagramHistory(newHistory);
-          setCurrentStep(newHistory.length - 1);
+      if (inspection) {
+        setFormData({
+          guestName: inspection.guest_name,
+          guestEmail: inspection.guest_email,
+          guestPhone: inspection.guest_phone,
+          inspectionDate: inspection.inspection_date,
+          property: inspection.property,
+          cartType: inspection.cart_type,
+          cartNumber: inspection.cart_number,
+          observations: inspection.observations || '',
+        });
+
+        const property = PROPERTIES.find(p => p.id === inspection.property);
+        if (property) {
+          setSelectedProperty(property);
         }
-      }
 
-      if (inspection.status === 'completed') {
-        navigate('/thank-you');
-        return;
+        // Primero establecemos los datos del diagrama
+        // Cargar las marcas del diagrama
+        if (inspection.diagram_data) {
+          const diagramData = inspection.diagram_data as DiagramData;
+          if (diagramData.points && diagramData.points.length > 0) {
+            // Eliminar duplicados de los puntos
+            const uniquePoints = diagramData.points.filter((point, index, self) =>
+              index === self.findIndex(p => p.x === point.x && p.y === point.y && p.color === point.color)
+            );
+
+            setDiagramPoints(uniquePoints);
+            // Crear un historial que permita deshacer cada marca
+            const newHistory = uniquePoints.reduce<Point[][]>(
+              (history, point) => {
+                const lastStep = history[history.length - 1] || [];
+                return [...history, [...lastStep, point]];
+              },
+              [[]]
+            );
+            setDiagramHistory(newHistory);
+            setCurrentStep(newHistory.length - 1);
+          }
+        }
+
+        if (inspection.status === 'completed') {
+          navigate('/thank-you');
+          return;
+        }
       }
     } catch (error) {
       console.error('Error loading inspection:', error);
@@ -269,15 +252,30 @@ function InspectionForm() {
 
   const handleUndo = () => {
     if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
-      setDiagramPoints(diagramHistory[currentStep - 1]);
+      const previousPoints = diagramHistory[currentStep - 1] || [];
+      setCurrentStep(prev => prev - 1);
+      setDiagramPoints(previousPoints);
+
+      if (selectedProperty) {
+        saveDiagramMarks(selectedProperty.diagramType, previousPoints).catch(error => {
+          console.error('Error saving diagram marks after undo:', error);
+        });
+      }
     }
   };
 
-  const handleClear = () => {
-    setDiagramPoints([]);
-    setDiagramHistory([[]]);
-    setCurrentStep(0);
+  const clearCanvas = () => {
+    if (!isGuestView) {
+      setDiagramPoints([]);
+      setDiagramHistory([[]]);
+      setCurrentStep(0);
+
+      if (selectedProperty) {
+        saveDiagramMarks(selectedProperty.diagramType, []).catch(error => {
+          console.error('Error clearing diagram marks:', error);
+        });
+      }
+    }
   };
 
   const clearSignature = () => {
@@ -323,140 +321,119 @@ function InspectionForm() {
 
       if (!isGuestView) {
         // Crear nueva inspección
-        const createInspection = async () => {
-          try {
-            // Si hay un diagrama seleccionado, primero obtenemos o creamos el registro en diagram_marks
-            let diagramMarksId = null;
-            
-            if (selectedProperty && selectedProperty.diagramType) {
-              // Guardar o actualizar las marcas y obtener el id real del registro
-              diagramMarksId = await saveDiagramMarks(selectedProperty.diagramType, diagramPoints);
+        const { data: inspection, error } = await supabase
+          .from('inspections')
+          .insert([
+            {
+              guest_name: formData.guestName,
+              guest_email: formData.guestEmail,
+              guest_phone: formData.guestPhone,
+              inspection_date: formData.inspectionDate,
+              property: formData.property,
+              cart_type: formData.cartType,
+              cart_number: formData.cartNumber,
+              diagram_data: selectedProperty ? {
+                points: diagramPoints,
+                width: 600,
+                height: 400,
+                diagramType: selectedProperty.diagramType
+              } : null,
+              status: 'pending'
             }
-            
-            // Ahora creamos la inspección con la referencia al diagram_marks
-            const { data: inspection, error } = await supabase
-              .from('inspections')
-              .insert([
-                {
-                  guest_name: formData.guestName,
-                  guest_email: formData.guestEmail,
-                  guest_phone: formData.guestPhone,
-                  inspection_date: formData.inspectionDate,
-                  property: formData.property,
-                  cart_type: formData.cartType,
-                  cart_number: formData.cartNumber,
-                  diagram_marks_id: diagramMarksId,
-                  // Mantenemos diagram_data por compatibilidad, pero podríamos eliminarlo en el futuro
-                  diagram_data: selectedProperty ? {
-                    points: diagramPoints,
-                    width: 600,
-                    height: 400,
-                    diagramType: selectedProperty.diagramType
-                  } : null,
-                  status: 'pending'
-                }
-              ])
-              .select()
-              .single();
+          ])
+          .select()
+          .single();
 
-            if (error) throw error;
-            
-            // Enviar email al invitado y guardar en Airtable
-            // Convertir puntos a un formato más simple y seguro
-            const safePoints = diagramPoints.map(point => ({
-              x: Number(point.x),
-              y: Number(point.y),
-              color: point.color,
-              size: Number(point.size || 6)
-            }));
+        if (error) throw error;
 
-            console.log('Puntos de diagrama para envío:', {
-              diagramPointsCount: safePoints.length,
-              diagramPointsExample: safePoints.slice(0, 3)
-            });
+        // Enviar email al invitado y guardar en Airtable
+        // Convertir puntos a un formato más simple y seguro
+        const safePoints = diagramPoints.map(point => ({
+          x: Number(point.x),
+          y: Number(point.y),
+          color: point.color,
+          size: Number(point.size || 6)
+        }));
 
-            // Modificar el envío para usar el enlace del PDF
-            await Promise.all([
-              (() => {
-                // Registro detallado del PDF
-                console.log('Detalles del PDF:', {
-                  pdfData: pdfData,
-                  base64Disponible: !!pdfData?.download?.base64,
-                  base64Length: pdfData?.download?.base64?.length
-                });
+        console.log('Puntos de diagrama para envío:', {
+          diagramPointsCount: safePoints.length,
+          diagramPointsExample: safePoints.slice(0, 3)
+        });
 
-                return sendFormEmail('guest-form', {
-                  to_email: formData.guestEmail,
-                  to_name: formData.guestName,
-                  from_name: 'Golf Cart Inspection System',
-                  from_email: 'no-reply@email.golfcartinspection.app',
-                  property: formData.property,
-                  cart_type: formData.cartType,
-                  cart_number: formData.cartNumber,
-                  inspection_date: formData.inspectionDate,
-                  form_link: `https://golfcartinspectiontest.netlify.app/inspection/${inspection.id}`,
-                  pdf_attachment: pdfUrl, // Usar el enlace del PDF directamente
+        // Modificar el envío para usar el enlace del PDF
+        // 1. Enviar a Airtable y obtener el recordId
+        const recordId = await sendToAirtable({
+          guestName: formData.guestName,
+          inspectionDate: formData.inspectionDate,
+          property: formData.property,
+          inspectionStatus: 'Pending'
+        }, pdfUrl);
 
-                  // Usar puntos seguros
-                  diagram_points: safePoints,
-                  isCreationAlert: true // Indicar explícitamente que queremos enviar alerta
-                });
-              })(),
-              sendToAirtable({
-                guestName: formData.guestName,
-                inspectionDate: formData.inspectionDate,
-                property: formData.property
-              }, pdfUrl, signaturePadRef.current?.toData()?.length > 0)
-            ]);
+        // 2. Guardar el recordId de Airtable en Supabase
+        if (recordId) {
+          await supabase
+            .from('inspections')
+            .update({ airtable_record_id: recordId })
+            .eq('id', inspection.id);
+        }
 
-            console.log('Detalles de puntos de diagrama:', {
-              diagramPointsCount: safePoints.length,
-              diagramPointsExample: safePoints.slice(0, 3),
-              diagramPointsTypes: safePoints.map(p => typeof p)
-            });
+        // 3. Enviar email al invitado
+        await sendFormEmail('guest-form', {
+          to_email: formData.guestEmail,
+          to_name: formData.guestName,
+          from_name: 'Golf Cart Inspection System',
+          from_email: 'no-reply@email.golfcartinspection.app',
+          property: formData.property,
+          cart_type: formData.cartType,
+          cart_number: formData.cartNumber,
+          inspection_date: formData.inspectionDate,
+          form_link: `${window.location.origin}/inspection/${inspection.id}`,
+          pdf_attachment: pdfUrl,
+          diagram_points: safePoints,
+          isCreationAlert: true
+        });
 
-            // Descargar versión local
-            try {
-              if (pdfData && pdfData.download && pdfData.download.blob) {
-                const downloadUrl = window.URL.createObjectURL(pdfData.download.blob);
-                const link = document.createElement('a');
-                link.href = downloadUrl;
-                link.download = pdfFilename;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                window.URL.revokeObjectURL(downloadUrl);
-              } else {
-                throw new Error('PDF data is not available for download');
-              }
-            } catch (downloadError) {
-              console.error('Error downloading PDF:', downloadError);
-              alert('Error downloading PDF. Please try again.');
-            }
+        console.log('Detalles de puntos de diagrama:', {
+          diagramPointsCount: safePoints.length,
+          diagramPointsExample: safePoints.slice(0, 3),
+          diagramPointsTypes: safePoints.map(p => typeof p)
+        });
 
-            setNotification({ type: 'success', message: '¡Enlace enviado exitosamente al huésped!' });
-            setFormData({
-              guestName: '',
-              guestEmail: '',
-              guestPhone: '',
-              inspectionDate: format(new Date(), 'yyyy-MM-dd'),
-              property: '',
-              cartType: '',
-              cartNumber: '',
-              observations: ''
-            });
-            setSelectedProperty(null);
-            setDiagramPoints([]);
-            setDiagramHistory([[]]);
-            setCurrentStep(0);
-            navigate('/thank-you');
-          } catch (error) {
-            console.error('Error creating inspection:', error);
-            setNotification({ type: 'error', message: 'Error al crear la inspección' });
+        // Descargar versión local
+        try {
+          if (pdfData && pdfData.download && pdfData.download.blob) {
+            const downloadUrl = window.URL.createObjectURL(pdfData.download.blob);
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.download = pdfFilename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(downloadUrl);
+          } else {
+            throw new Error('PDF data is not available for download');
           }
-        };
+        } catch (downloadError) {
+          console.error('Error downloading PDF:', downloadError);
+          alert('Error downloading PDF. Please try again.');
+        }
 
-        await createInspection();
+        setNotification({ type: 'success', message: '¡Enlace enviado exitosamente al huésped!' });
+        setFormData({
+          guestName: '',
+          guestEmail: '',
+          guestPhone: '',
+          inspectionDate: format(new Date(), 'yyyy-MM-dd'),
+          property: '',
+          cartType: '',
+          cartNumber: '',
+          observations: ''
+        });
+        setSelectedProperty(null);
+        setDiagramPoints([]);
+        setDiagramHistory([[]]);
+        setCurrentStep(0);
+        navigate('/thank-you');
       } else {
         // Actualizar inspección existente
         const { error } = await supabase
@@ -498,11 +475,21 @@ function InspectionForm() {
             .eq('id', id);
         }
 
-        // Actualizar el enlace del PDF en Airtable
-        try {
-          await updateAirtablePdfLink(formId, pdfUrl);
-        } catch (updateError) {
-          console.error('Error actualizando PDF en Airtable:', updateError);
+        // Recuperar el recordId real de Airtable desde Supabase
+        const { data: airtableRow } = await supabase
+          .from('inspections')
+          .select('airtable_record_id')
+          .eq('id', id)
+          .single();
+        const recordId = airtableRow?.airtable_record_id;
+        if (recordId) {
+          try {
+            await updateAirtablePdfLink(recordId, pdfUrl);
+          } catch (updateError) {
+            console.error('Error actualizando PDF en Airtable:', updateError);
+          }
+        } else {
+          console.error('No se encontró el recordId de Airtable en Supabase para esta inspección');
         }
 
         // Cuando se firma un formulario (vista de invitado)
@@ -521,6 +508,7 @@ function InspectionForm() {
           if (error) throw error;
 
           // Ya que form_id no existe en la tabla, generamos un ID único para el PDF
+
           const pdfFileName = `${formData.property}_${formData.guestName.toLowerCase().replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
 
           // Restaurar la funcionalidad de descarga del PDF
@@ -535,59 +523,45 @@ function InspectionForm() {
               document.body.removeChild(link);
               window.URL.revokeObjectURL(downloadUrl);
               console.log('PDF descargado correctamente');
+
+              // Enviar correos de forma asíncrona
+              await sendFormEmail('completed-form', {
+                to_email: formData.guestEmail,
+                to_name: formData.guestName,
+                from_name: 'Golf Cart Inspection System',
+                from_email: 'no-reply@email.golfcartinspection.app',
+                property: formData.property,
+                cart_type: formData.cartType,
+                cart_number: formData.cartNumber,
+                inspection_date: formData.inspectionDate,
+                guestName: formData.guestName,
+                guestEmail: formData.guestEmail,
+                observations: formData.observations,
+                form_id: id,
+                isAdmin: false // Correo al huésped
+              });
+
+              await sendFormEmail('completed-form', {
+                to_email: formData.guestEmail, // Usar el email del huésped real
+                to_name: formData.guestName, // Usar el nombre del huésped real
+                from_name: 'Golf Cart Inspection System',
+                from_email: 'no-reply@email.golfcartinspection.app',
+                property: formData.property,
+                cart_type: formData.cartType,
+                cart_number: formData.cartNumber,
+                inspection_date: formData.inspectionDate,
+                observations: formData.observations,
+                formId: id,
+                pdf_attachment: pdfUrl, // Incluir URL del PDF para administradores
+                isAdmin: true, // Correo a administradores
+                skipAdminAlert: true // Evitar envío duplicado de alertas
+              });
+
+              navigate('/thank-you');
             } catch (downloadError) {
-              console.error('Error al descargar PDF:', downloadError);
+              console.error('Error al descargar PDF o enviar correos:', downloadError);
             }
           }
-
-          // Actualizar el enlace del PDF en Airtable - usando el ID de inspección como identificador
-          try {
-            await updateAirtablePdfLink(id, pdfUrl);
-          } catch (updateError) {
-            console.error('Error actualizando PDF en Airtable:', updateError);
-          }
-
-          // Generar y subir PDF
-          const pdfUrl = `https://lngsgyvpqhjmedjrycqw.supabase.co/storage/v1/object/public/pdfs/rental_${id}_${new Date().toISOString().split('T')[0]}.pdf`;
-
-          // Enviar correos
-          await Promise.all([
-            // Correo de confirmación al huésped (sin PDF)
-            sendFormEmail('completed-form', {
-              to_email: formData.guestEmail,
-              to_name: formData.guestName,
-              from_name: 'Golf Cart Inspection System',
-              from_email: 'no-reply@email.golfcartinspection.app',
-              property: formData.property,
-              cart_type: formData.cartType,
-              cart_number: formData.cartNumber,
-              inspection_date: formData.inspectionDate,
-              guestName: formData.guestName,
-              guestEmail: formData.guestEmail,
-              observations: formData.observations,
-              form_id: id,
-              isAdmin: false // Correo al huésped
-            }),
-
-            // Correo a administradores (con PDF)
-            sendFormEmail('completed-form', {
-              to_email: formData.guestEmail, // Usar el email del huésped real
-              to_name: formData.guestName, // Usar el nombre del huésped real
-              from_name: 'Golf Cart Inspection System',
-              from_email: 'no-reply@email.golfcartinspection.app',
-              property: formData.property,
-              cart_type: formData.cartType,
-              cart_number: formData.cartNumber,
-              inspection_date: formData.inspectionDate,
-              observations: formData.observations,
-              formId: id,
-              pdf_attachment: pdfUrl, // Incluir URL del PDF para administradores
-              isAdmin: true, // Correo a administradores
-              skipAdminAlert: true // Evitar envío duplicado de alertas
-            })
-          ]);
-
-          navigate('/thank-you');
         }
       }
     } catch (error) {
@@ -601,19 +575,6 @@ function InspectionForm() {
   if (isLoading) {
     return <LoadingSpinner />;
   }
-
-  // --- VALIDATION LOGIC ---
-  const guestInfoValid = !!(
-    formData.guestName &&
-    formData.guestEmail &&
-    formData.guestPhone &&
-    formData.inspectionDate
-  );
-  const propertyValid = !!formData.property && selectedProperty !== null;
-  const diagramValid = diagramPoints.length > 0;
-
-  // Only allow PDF download/submit when all conditions are met
-  const formValid = guestInfoValid && propertyValid && diagramValid;
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
@@ -656,19 +617,15 @@ function InspectionForm() {
               onPropertyChange={handlePropertyChange}
             />
 
-            {selectedProperty ? (
-              <DiagramCanvas
-                isGuestView={isGuestView}
-                selectedProperty={selectedProperty}
-                history={diagramHistory}
-                currentStep={currentStep}
-                onUndo={handleUndo}
-                onClear={handleClear}
-                onPointsChange={handlePointsChange}
-              />
-            ) : (
-              <div className="text-center text-gray-500">Cargando diagrama...</div>
-            )}
+            <DiagramCanvas
+              isGuestView={isGuestView}
+              selectedProperty={selectedProperty}
+              history={diagramHistory}
+              currentStep={currentStep}
+              onUndo={handleUndo}
+              onClear={clearCanvas}
+              onPointsChange={handlePointsChange}
+            />
 
             <SignatureSection
               isGuestView={isGuestView}
@@ -679,11 +636,13 @@ function InspectionForm() {
             />
 
             <div className="flex justify-end space-x-4">
-              {/* Use PDFButton for consistent UI and pass validation state */}
-              <PDFButton
-                isSending={isSending}
-                disabled={!formValid}
-              />
+              <button
+                type="submit"
+                disabled={isSending}
+                className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSending ? 'Processing...' : (isGuestView ? 'Sign and Download PDF' : 'Send to Guest')}
+              </button>
             </div>
           </form>
         </div>
