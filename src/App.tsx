@@ -321,14 +321,20 @@ function InspectionForm() {
 
       if (!isGuestView) {
         // Obtener datos de la inspección
+        if (!id) {
+          console.error('No se proporcionó un ID de inspección');
+          throw new Error('ID de inspección no proporcionado');
+        }
+
         const { data: inspectionData, error: fetchError } = await supabase
           .from('inspections')
-          .select('form_id, form_link, airtable_record_id')
+          .select('form_id, form_link, airtable_record_id, diagram_marks_id')
           .eq('id', id)
           .single();
 
         if (fetchError) {
           console.error('Error obteniendo datos de la inspección:', fetchError);
+          throw fetchError;
         }
 
         let formId = inspectionData?.form_id;
@@ -339,16 +345,27 @@ function InspectionForm() {
         if (!formId) {
           formId = `${formData.guestName.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`;
           const pdfFileName = `${formData.property}_${formData.guestName.toLowerCase().replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
-          formLink = `https://lngsgyvpqhjmedjrycqw.supabase.co/storage/v1/object/public/pdfs/${pdfFileName}`;
+          formLink = `https://rxudgxowradykfqfwhkp.supabase.co/storage/v1/object/public/pdfs/${pdfFileName}`;
 
           // Actualizar la inspección con el nuevo form_id y form_link
-          await supabase
+          const { error: updateError } = await supabase
             .from('inspections')
             .update({
               form_id: formId,
-              form_link: formLink
+              form_link: formLink,
+              diagram_data: {
+                points: diagramPoints,
+                width: 600,
+                height: 400,
+                diagramType: selectedProperty?.diagramType
+              }
             })
             .eq('id', id);
+
+          if (updateError) {
+            console.error('Error actualizando datos de la inspección:', updateError);
+            throw updateError;
+          }
         }
 
         // Actualizar Airtable si tenemos recordId existente
@@ -371,7 +388,12 @@ function InspectionForm() {
             signature_data: signaturePadRef.current?.toDataURL(),
             status: 'completed',
             completed_at: new Date().toISOString(),
-            pdf_url: pdfUrl // Guardar la URL del PDF
+            diagram_data: {
+              points: diagramPoints,
+              width: 600,
+              height: 400,
+              diagramType: selectedProperty?.diagramType
+            }
           })
           .eq('id', id);
 
