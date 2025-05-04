@@ -1,4 +1,4 @@
-import React from 'react';
+// Componente principal de la aplicación
 import { Routes, Route, useParams } from 'react-router-dom';
 import { GuestInformation } from './components/GuestInformation';
 import { PropertyInformation } from './components/PropertyInformation';
@@ -6,6 +6,7 @@ import { DiagramCanvas } from './components/DiagramCanvas';
 import { SignatureSection } from './components/SignatureSection';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { ThankYou } from './components/ThankYou';
+import PersistentFormHandler from './components/PersistentFormHandler';
 import { useInspectionForm } from './hooks/useInspectionForm';
 import './styles/orientation-warning.css';
 
@@ -114,6 +115,9 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<InspectionForm />} />
+      {/* Nueva ruta para enlaces persistentes - debe ir ANTES de la ruta genérica */}
+      <Route path="/inspection/form/:formLink" element={<PersistentFormHandler />} />
+      {/* Ruta original para compatibilidad con enlaces existentes */}
       <Route path="/inspection/:id" element={<InspectionForm />} />
       <Route path="/thank-you" element={<ThankYou />} />
     </Routes>

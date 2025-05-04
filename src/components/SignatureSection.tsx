@@ -9,6 +9,10 @@ interface SignatureSectionProps {
   onObservationsChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
   signaturePadRef: React.RefObject<SignaturePad>;
   onClearSignature: () => void;
+  // Propiedades opcionales para el formulario persistente
+  onSignatureChange?: () => void;
+  onTermsChange?: (accepted: boolean) => void;
+  termsAccepted?: boolean;
 }
 
 export function SignatureSection({
@@ -17,6 +21,9 @@ export function SignatureSection({
   onObservationsChange,
   signaturePadRef,
   onClearSignature,
+  onSignatureChange,
+  onTermsChange,
+  termsAccepted
 }: SignatureSectionProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -67,6 +74,22 @@ export function SignatureSection({
             and I acknowledge the stated damages. Any additional damages not listed are new and are 
             considered my responsibility.
           </p>
+          
+          {/* Checkbox para aceptar términos (solo visible en vista de invitado) */}
+          {isGuestView && (
+            <div className="mt-3 flex items-center">
+              <input
+                type="checkbox"
+                id="terms-checkbox"
+                checked={!!termsAccepted}
+                onChange={(e) => onTermsChange?.(e.target.checked)}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label htmlFor="terms-checkbox" className="ml-2 block text-sm text-gray-700">
+                I accept the terms and conditions
+              </label>
+            </div>
+          )}
         </div>
 
         {/* Signature */}
@@ -86,7 +109,9 @@ export function SignatureSection({
                   minHeight: '150px',
                   backgroundColor: 'white',
                   cursor: 'crosshair'
-                }
+                },
+                // Usar onChange para capturar cambios en la firma
+                onChange: () => onSignatureChange && onSignatureChange()
               }}
             />
           </div>

@@ -192,11 +192,23 @@ export class EmailService {
     // Generar un link basado en los parámetros disponibles
     const baseUrl = 'https://golf-cart-inspection.netlify.app';
 
+    // Si ya tenemos un formId (enlace persistente), usarlo directamente
     if (params.formId) {
-      return `${baseUrl}/inspection/${params.formId}`;
+      return `${baseUrl}/${params.formId.startsWith('inspection/') ? params.formId : `inspection/${params.formId}`}`;
     }
 
+    // Si tenemos un formLink completo, usarlo directamente
+    if (params.form_link) {
+      return params.form_link.startsWith('http') 
+        ? params.form_link 
+        : `${baseUrl}/${params.form_link.startsWith('inspection/') ? params.form_link : `inspection/${params.form_link}`}`;
+    }
+
+    // Fallback: crear un enlace genérico (esto debería evitarse en producción)
+    // En su lugar, deberíamos asegurarnos de que siempre se crea un formulario
+    // en la base de datos antes de enviar el correo
     if (params.to_name && params.property) {
+      console.warn('Generando enlace sin ID persistente. Esto no es recomendable en producción.');
       const sluggedName = params.to_name.toLowerCase().replace(/\s+/g, '-');
       const sluggedProperty = params.property.toLowerCase().replace(/\s+/g, '-');
       return `${baseUrl}/inspection/${sluggedName}-${sluggedProperty}-${Date.now()}`;
