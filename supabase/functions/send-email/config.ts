@@ -5,12 +5,13 @@
 // Lista para alertas de formulario creado
 export const FORM_CREATED_ADMIN_EMAILS = [
   "conradovilla@hotmail.com",
+  "luxeprbahia@gmail.com"
 ];
 
 // Lista para notificaciones de formulario completado/firmado
 export const FORM_COMPLETED_ADMIN_EMAILS = [
   "conradovilla@hotmail.com",
-  "conradovilla@icloud.com",
+  "luxeprbahia@gmail.com"
 ];
 
 // Lista general de administradores (para compatibilidad con código existente)
