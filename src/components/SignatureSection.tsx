@@ -74,22 +74,6 @@ export function SignatureSection({
             and I acknowledge the stated damages. Any additional damages not listed are new and are 
             considered my responsibility.
           </p>
-          
-          {/* Checkbox para aceptar términos (solo visible en vista de invitado) */}
-          {isGuestView && (
-            <div className="mt-3 flex items-center">
-              <input
-                type="checkbox"
-                id="terms-checkbox"
-                checked={!!termsAccepted}
-                onChange={(e) => onTermsChange?.(e.target.checked)}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <label htmlFor="terms-checkbox" className="ml-2 block text-sm text-gray-700">
-                I accept the terms and conditions
-              </label>
-            </div>
-          )}
         </div>
 
         {/* Signature */}
