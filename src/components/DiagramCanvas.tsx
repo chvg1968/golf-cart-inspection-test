@@ -59,7 +59,7 @@ export function DiagramCanvas({
 
     // Draw history points
     const points = currentPointsRef.current;
-    console.log('Redrawing canvas with points:', points);
+
     points.forEach(point => {
       ctx.beginPath();
       if (point.type === 'x') {
@@ -88,7 +88,7 @@ export function DiagramCanvas({
         ctx.fill();
       }
       ctx.closePath();
-      console.log('Drawing point:', { ...point, color: ctx.fillStyle });
+
     });
     
     // Draw current path only if no es guest view
@@ -129,7 +129,7 @@ export function DiagramCanvas({
   useEffect(() => {
     if (history[currentStep]) {
       currentPointsRef.current = history[currentStep];
-      console.log('Updated points:', history[currentStep]);
+
     } else {
       currentPointsRef.current = [];
     }
@@ -179,22 +179,22 @@ export function DiagramCanvas({
 
     const loadImage = async () => {
       try {
-        console.log('loadImage called, selectedProperty:', selectedProperty);
+
         if (!selectedProperty) {
-          console.log('No property selected');
+
           return;
         }
 
         // Si hay propiedad seleccionada, cargar su diagrama
         const url = await getCartDiagramUrl(selectedProperty.diagramType);
-        console.log('Loading diagram from URL:', url);
+
         if (!url || !isCurrentLoad) return;
 
         const img = new Image();
         img.crossOrigin = 'anonymous';
         img.onload = () => {
           if (!isCurrentLoad) return;
-          console.log('Image loaded successfully');
+
           initBackgroundCanvas(img);
         };
         img.onerror = (error) => {

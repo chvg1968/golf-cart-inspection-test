@@ -35,14 +35,14 @@ export function generateMessageId(): string {
 }
 
 export async function sendFormEmail(type: 'guest-form' | 'completed-form', params: EmailParams) {
-  console.log('Iniciando envío de email...', {
+
     type,
     hasDiagramBase64: !!params.diagram_base64,
     diagramBase64Length: params.diagram_base64?.length
   });
 
   // Registro detallado de todos los parámetros
-  console.log('Parámetros completos de email:', {
+
     to_email: params.to_email,
     to_name: params.to_name,
     property: params.property,
@@ -85,7 +85,7 @@ export async function sendFormEmail(type: 'guest-form' | 'completed-form', param
       })
     });
 
-    console.log('Respuesta del servicio de correo:', {
+
       status: response.status,
       statusText: response.statusText
     });
@@ -102,7 +102,7 @@ export async function sendFormEmail(type: 'guest-form' | 'completed-form', param
     }
 
     const result = await response.json();
-    console.log('Resultado del envío de correo:', result);
+
 
     return result;
   } catch (error) {

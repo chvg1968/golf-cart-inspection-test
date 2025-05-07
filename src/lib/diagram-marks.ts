@@ -6,7 +6,7 @@ const pointsCache = new Map<string, Point[]>();
 
 export async function saveDiagramMarks(diagramId: string, points: Point[]): Promise<string | null> {
   try {
-    console.log('[saveDiagramMarks] Starting save operation:', {
+
       diagramId,
       pointsCount: points.length
     });
@@ -19,7 +19,7 @@ export async function saveDiagramMarks(diagramId: string, points: Point[]): Prom
       size: typeof point.size === 'number' ? point.size : 8
     }));
 
-    console.log('[saveDiagramMarks] Points normalized:', {
+
       sample: normalizedPoints.slice(0, 2),
       total: normalizedPoints.length
     });
@@ -36,7 +36,7 @@ export async function saveDiagramMarks(diagramId: string, points: Point[]): Prom
       return null;
     }
 
-    console.log('[saveDiagramMarks] Existing record check:', {
+
       exists: !!existingData,
       id: existingData?.id
     });
@@ -68,7 +68,7 @@ export async function saveDiagramMarks(diagramId: string, points: Point[]): Prom
     // Actualizar el caché después de guardar
     pointsCache.set(diagramId, normalizedPoints);
 
-    console.log('[saveDiagramMarks] Save operation completed successfully');
+
   } catch (error) {
     console.error('[saveDiagramMarks] Unexpected error:', error);
   }
@@ -82,7 +82,7 @@ export async function getDiagramMarks(diagramId: string): Promise<Point[]> {
       return cached;
     }
 
-    console.log('[getDiagramMarks] Getting marks for:', { diagramId });
+
 
     const { data, error } = await supabase
       .from('diagram_marks')
@@ -96,7 +96,7 @@ export async function getDiagramMarks(diagramId: string): Promise<Point[]> {
       return [];
     }
 
-    console.log('[getDiagramMarks] Raw data from DB:', data);
+
 
     // Asegurarse de que los puntos son un array válido
     if (data?.points && Array.isArray(data.points)) {
@@ -110,7 +110,7 @@ export async function getDiagramMarks(diagramId: string): Promise<Point[]> {
       // Actualizar el caché
       pointsCache.set(diagramId, normalizedPoints);
 
-      console.log('[getDiagramMarks] Normalized points:', {
+
         count: normalizedPoints.length,
         sample: normalizedPoints.slice(0, 2)
       });
@@ -118,7 +118,7 @@ export async function getDiagramMarks(diagramId: string): Promise<Point[]> {
       return normalizedPoints;
     }
 
-    console.log('[getDiagramMarks] No valid points found');
+
     return [];
   } catch (error) {
     console.error('[getDiagramMarks] Unexpected error:', error);
