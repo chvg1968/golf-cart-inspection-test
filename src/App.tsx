@@ -9,6 +9,7 @@ import { ThankYou } from './components/ThankYou';
 import PersistentFormHandler from './components/PersistentFormHandler';
 import { useInspectionForm } from './hooks/useInspectionForm';
 import './styles/orientation-warning.css';
+import OrientationWarning from './components/OrientationWarning';
 
 function InspectionForm() {
   const { id } = useParams();
@@ -38,54 +39,53 @@ function InspectionForm() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
-      {notification && (
-        <div
-          className={`fixed top-4 right-4 p-4 rounded-lg shadow-lg ${notification.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
-          role="alert"
-        >
-          {notification.message}
-        </div>
-      )}
-      <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-lg p-8">
-        <div ref={formContentRef}>
-          <div className="flex flex-col items-center mb-8">
-            <img
-              src="/diagrams/logo.png"
-              alt="Golf Cart Inspection Logo"
-              className="h-32 mb-4"
-            />
-            <h1 className="text-3xl font-bold text-gray-900 text-center">
-              Golf Cart Inspection
-            </h1>
+    <>
+      <OrientationWarning />
+      <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+        {notification && (
+          <div
+            className={`fixed top-4 right-4 p-4 rounded-lg shadow-lg ${notification.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
+            role="alert"
+          >
+            {notification.message}
           </div>
-
-          <form ref={formRef} onSubmit={handleSubmit} className="space-y-8">
-            <GuestInformation
-              formData={formData}
-              isGuestView={isGuestView}
-              onInputChange={handleInputChange}
-            />
-
-            <PropertyInformation
-              formData={formData}
-              isGuestView={isGuestView}
-              onPropertyChange={handlePropertyChange}
-            />
-
-            {selectedProperty ? (
-              <DiagramCanvas
-                isGuestView={isGuestView}
-                selectedProperty={selectedProperty}
-                history={diagramHistory}
-                currentStep={currentStep}
-                onUndo={handleUndo}
-                onClear={handleClear}
-                onPointsChange={handlePointsChange}
+        )}
+        <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-lg p-8">
+          <div ref={formContentRef}>
+            <div className="flex flex-col items-center mb-8">
+              <img
+                src="/diagrams/logo.png"
+                alt="Golf Cart Inspection Logo"
+                className="h-32 mb-4"
               />
-            ) : (
-              <div className="text-center text-gray-500">Cargando diagrama...</div>
-            )}
+              <h1 className="text-3xl font-bold text-gray-900 text-center">
+                Golf Cart Inspection
+              </h1>
+            </div>
+            <form ref={formRef} onSubmit={handleSubmit} className="space-y-8">
+              <GuestInformation
+                formData={formData}
+                isGuestView={isGuestView}
+                onInputChange={handleInputChange}
+              />
+              <PropertyInformation
+                formData={formData}
+                isGuestView={isGuestView}
+                onPropertyChange={handlePropertyChange}
+              />
+              {selectedProperty ? (
+                <DiagramCanvas
+                  isGuestView={isGuestView}
+                  selectedProperty={selectedProperty}
+                  history={diagramHistory}
+                  currentStep={currentStep}
+                  onUndo={handleUndo}
+                  onClear={handleClear}
+                  onPointsChange={handlePointsChange}
+                />
+              ) : (
+                <div className="text-center text-gray-500">Cargando diagrama...</div>
+              )}
 
             <SignatureSection
               isGuestView={isGuestView}
@@ -108,6 +108,7 @@ function InspectionForm() {
         </div>
       </div>
     </div>
+  </> 
   );
 }
 

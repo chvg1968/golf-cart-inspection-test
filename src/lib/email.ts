@@ -15,11 +15,11 @@ export interface EmailParams {
   observations?: string;
   diagram_base64?: string;
   formId?: string;
-  form_id?: string; // Alias para formId
-  guestName?: string; // Alias para to_name
+  form_id?: string;
+  guestName?: string;
   isAdmin?: boolean;
-  skipAdminAlert?: boolean; // Evita el envío automático de alertas a administradores
-  adminAlert?: boolean; // Indica si este correo es una alerta para administradores
+  skipAdminAlert?: boolean;
+  adminAlert?: boolean;
   diagram_points?: Array<{
     x: number;
     y: number;
@@ -35,14 +35,13 @@ export function generateMessageId(): string {
 }
 
 export async function sendFormEmail(type: 'guest-form' | 'completed-form', params: EmailParams) {
-
+  console.log({
     type,
     hasDiagramBase64: !!params.diagram_base64,
     diagramBase64Length: params.diagram_base64?.length
   });
 
-  // Registro detallado de todos los parámetros
-
+  console.log({
     to_email: params.to_email,
     to_name: params.to_name,
     property: params.property,
@@ -54,7 +53,6 @@ export async function sendFormEmail(type: 'guest-form' | 'completed-form', param
     diagram_points_count: params.diagram_points?.length
   });
 
-  // Envío de correo con manejo de errores detallado
   try {
     const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email`, {
       method: 'POST',
@@ -66,7 +64,7 @@ export async function sendFormEmail(type: 'guest-form' | 'completed-form', param
         guestName: params.to_name,
         guestEmail: params.to_email,
         property: params.property,
-        type: type,
+        type,
         cartType: params.cart_type,
         cartNumber: params.cart_number,
         inspectionDate: params.inspection_date,
@@ -75,7 +73,7 @@ export async function sendFormEmail(type: 'guest-form' | 'completed-form', param
         diagramPoints: params.diagram_points,
         replyTo: params.reply_to || 'support@luxepropertiespr.com',
         isAdmin: params.isAdmin,
-        skipAdminAlert: params.isAdmin ? true : params.skipAdminAlert, // Evitar alertas duplicadas cuando es un correo a admin
+        skipAdminAlert: params.isAdmin ? true : params.skipAdminAlert,
         adminAlert: params.adminAlert,
         subject: params.subject || (
           type === 'guest-form'
@@ -85,7 +83,7 @@ export async function sendFormEmail(type: 'guest-form' | 'completed-form', param
       })
     });
 
-
+    console.log({
       status: response.status,
       statusText: response.statusText
     });
@@ -102,8 +100,6 @@ export async function sendFormEmail(type: 'guest-form' | 'completed-form', param
     }
 
     const result = await response.json();
-
-
     return result;
   } catch (error) {
     console.error('Error completo al enviar correo:', {
