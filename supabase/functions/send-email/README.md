@@ -32,7 +32,7 @@ Para cambiar la dirección de correo del remitente, edita la constante `DEFAULT_
 
 ```typescript
 // Correo de remitente predeterminado
-export const DEFAULT_SENDER = "Luxe Properties <noreply@luxepropertiespr.com>";
+export const DEFAULT_SENDER = "Luxe Properties <noreply@mail.luxepropertiespr.com>";
 ```
 
 ### Cómo actualizar otras configuraciones

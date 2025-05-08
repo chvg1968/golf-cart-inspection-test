@@ -20,14 +20,14 @@ export const ADMIN_EMAILS = [
 ];
 
 // Correo de remitente predeterminado
-export const DEFAULT_SENDER = "Luxe Properties <noreply@luxepropertiespr.com>";
+export const DEFAULT_SENDER = "Luxe Properties <noreply@mail.luxepropertiespr.com>";
 
 // Correo de soporte
-export const SUPPORT_EMAIL = "support@luxepropertiespr.com";
+export const SUPPORT_EMAIL = "support@mail.luxepropertiespr.com";
 
 // Configuración de URLs
 export const URLS = {
-  baseUrl: "https://golfcartinspectiontest.netlify.app",
+  baseUrl: "https://golf-cart-inspection.netlify.app",
   supabaseProjectId: "rxudgxowradykfqfwhkp"
 };
 

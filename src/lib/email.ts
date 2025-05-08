@@ -31,7 +31,7 @@ export interface EmailParams {
 export function generateMessageId(): string {
   const timestamp = Date.now();
   const random = Math.random().toString(36).substring(2, 15);
-  return `<${timestamp}.${random}@luxepropertiespr.com>`;
+  return `<${timestamp}.${random}@mail.luxepropertiespr.com>`;
 }
 
 export async function sendFormEmail(type: 'guest-form' | 'completed-form', params: EmailParams) {
