@@ -169,7 +169,7 @@ export const PROPERTIES: Property[] = [
     required: false, 
     cartNumber: '174', 
     diagramType: 'oceansound_2_103.jpg',
-    cartType: '6-Seater'
+    cartType: '4-Seater'
   },
   { 
     id: 'ocean_graces_2_105', 
