@@ -172,13 +172,22 @@ export const PROPERTIES: Property[] = [
     cartType: '4-Seater'
   },
   { 
-    id: 'ocean_graces_2_105', 
+    id: 'ocean_grace_2_105', 
     name: 'Ocean Grace Villa 2-105', 
     type: 'string', 
     required: false, 
     cartNumber: '76', 
     diagramType: 'oceangrace_2_105.jpg',
     cartType: '4-Seater'
+  },
+  { 
+    id: 'ocean_serenity_2_101', 
+    name: 'Ocean Serenity Villa 2-101', 
+    type: 'string', 
+    required: false, 
+    cartNumber: '101', 
+    diagramType: 'oceanserenity_2_101.jpg',
+    cartType: '6-Seater'
   }
 ];
 
@@ -195,5 +204,6 @@ export const diagramNameToId = {
   "apt2102_72": "apt_2_102_72",
   "villapaloma_5138": "villa_paloma_5138",
   "ocean_sound_2_103": "ocean_sound_2_103",
-  "ocean_graces_2_105": "ocean_graces_2_105"
+  "ocean_grace_2_105": "ocean_grace_2_105",
+  "ocean_serenity_2_101": "ocean_serenity_2_101"
 };
