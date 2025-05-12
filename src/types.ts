@@ -161,6 +161,24 @@ export const PROPERTIES: Property[] = [
     cartNumber: '101', 
     diagramType: 'villapaloma_5138.jpg',
     cartType: '6-Seater'
+  },
+  { 
+    id: 'ocean_sound_2_103', 
+    name: 'Ocean Sound Villa 2-103', 
+    type: 'string', 
+    required: false, 
+    cartNumber: '174', 
+    diagramType: 'oceansound_2_103.jpg',
+    cartType: '6-Seater'
+  },
+  { 
+    id: 'ocean_graces_2_105', 
+    name: 'Ocean Grace Villa 2-105', 
+    type: 'string', 
+    required: false, 
+    cartNumber: '76', 
+    diagramType: 'oceangrace_2_105.jpg',
+    cartType: '4-Seater'
   }
 ];
 
@@ -175,5 +193,7 @@ export const diagramNameToId = {
   "villapalacio_7256": "villa_palacio_7256",
   "villaclara_3325": "villa_clara_3325",
   "apt2102_72": "apt_2_102_72",
-  "villapaloma_5138": "villa_paloma_5138"
+  "villapaloma_5138": "villa_paloma_5138",
+  "ocean_sound_2_103": "ocean_sound_2_103",
+  "ocean_graces_2_105": "ocean_graces_2_105"
 };
