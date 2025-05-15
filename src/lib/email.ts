@@ -1,3 +1,5 @@
+import { v4 as uuidv4 } from 'uuid';
+
 export interface EmailParams {
   to_name: string;
   to_email: string;
@@ -29,9 +31,18 @@ export interface EmailParams {
 }
 
 export function generateMessageId(): string {
-  const timestamp = Date.now();
-  const random = Math.random().toString(36).substring(2, 15);
-  return `<${timestamp}.${random}@mail.luxepropertiespr.com>`;
+  try {
+    // Generar UUID v4 seguro
+    const uuid = uuidv4();
+    
+    // Usar el dominio desde variables de entorno
+    const domain = process.env.EMAIL_DOMAIN || 'mail.luxepropertiespr.com';
+    
+    return `<${uuid}@${domain}>`;
+  } catch (error) {
+    console.error('Error generating message ID:', error);
+    throw new Error('Failed to generate secure message ID');
+  }
 }
 
 export async function sendFormEmail(type: 'guest-form' | 'completed-form', params: EmailParams) {
