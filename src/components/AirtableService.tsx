@@ -70,12 +70,12 @@ export async function sendToAirtable(formData: InspectionFormData, pdfLink: stri
         throw new Error(`Faltan variables de entorno de Airtable: ${missingVars.join(', ')}`);
     }
 
-    console.log('Iniciando envío a Airtable...', {
-        formData,
-        pdfLink,
-        baseId,
-        tableName
-    });
+    // console.log('Iniciando envío a Airtable...', {
+    //     formData,
+    //     pdfLink,
+    //     baseId,
+    //     tableName
+    // });
 
     try {
         interface AirtableFields {
