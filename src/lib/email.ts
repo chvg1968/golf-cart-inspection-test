@@ -35,23 +35,6 @@ export function generateMessageId(): string {
 }
 
 export async function sendFormEmail(type: 'guest-form' | 'completed-form', params: EmailParams) {
-  console.log({
-    type,
-    hasDiagramBase64: !!params.diagram_base64,
-    diagramBase64Length: params.diagram_base64?.length
-  });
-
-  console.log({
-    to_email: params.to_email,
-    to_name: params.to_name,
-    property: params.property,
-    cart_type: params.cart_type,
-    cart_number: params.cart_number,
-    inspection_date: params.inspection_date,
-    form_link: params.form_link,
-    pdf_attachment: params.pdf_attachment,
-    diagram_points_count: params.diagram_points?.length
-  });
 
   try {
     const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email`, {
@@ -81,11 +64,6 @@ export async function sendFormEmail(type: 'guest-form' | 'completed-form', param
             : `Inspección de Carrito de Golf Completada - ${params.property}`
         )
       })
-    });
-
-    console.log({
-      status: response.status,
-      statusText: response.statusText
     });
 
     if (!response.ok) {

@@ -47,7 +47,6 @@ export async function sendToAirtable(formData: InspectionFormData, pdfLink: stri
         return null;
     }
     
-    console.log(`Enviando a Airtable con PDF link: ${pdfLink}`);
 
     // Validar que el pdfLink sea una URL válida
     try {
@@ -162,7 +161,6 @@ export async function sendToAirtable(formData: InspectionFormData, pdfLink: stri
         }
 
         // Crear nuevo registro si no existe
-        console.log('Enviando nuevo registro a Airtable:', { url: baseUrl, data: airtableData });
 
         const response = await fetch(
             baseUrl,
@@ -175,11 +173,6 @@ export async function sendToAirtable(formData: InspectionFormData, pdfLink: stri
 
         // Tipar la respuesta JSON
         const responseData: AirtableCreateResponse = await response.json();
-        console.log('Respuesta de Airtable:', {
-            status: response.status,
-            statusText: response.statusText,
-            data: responseData
-        });
 
         if (!response.ok) {
             console.error('Error detallado de Airtable al crear:', {
