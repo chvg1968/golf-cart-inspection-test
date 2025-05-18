@@ -8,12 +8,29 @@ import { LoadingSpinner } from './components/LoadingSpinner';
 import { ThankYou } from './components/ThankYou';
 import PersistentFormHandler from './components/PersistentFormHandler';
 import { useInspectionForm } from './hooks/useInspectionForm';
+// useStore ya se importa más abajo o más arriba, eliminando esta duplicación potencial
 import './styles/orientation-warning.css';
 import OrientationWarning from './components/OrientationWarning';
+import Login from './components/Login';
+import { useEffect } from 'react'; // useState y supabase ya no son necesarios aquí para auth
+// import { supabase } from './lib/supabase'; // Ya no se usa para la lógica de sesión aquí
+import { useStore } from './store/useStore'; // ESTA ES LA IMPORTACIÓN QUE DEBE QUEDAR
+import ProtectedRoute from './components/ProtectedRoute'; // Importar la ruta protegida
+// Navigate se usará dentro de ProtectedRoute y posiblemente para rutas no encontradas
 
 function InspectionForm() {
   const { id } = useParams();
-  const {
+  const zustandLogout = useStore((state) => state.logout);
+  const currentUser = useStore((state) => state.currentUser);
+
+  const handleLogout = () => {
+    zustandLogout();
+    // La redirección a /login es manejada por ProtectedRoute al detectar que isAuthenticated es false
+    console.log('Logout solicitado. Estado de Zustand actualizado.');
+  };
+
+  const{
+
     formData,
     isGuestView,
     isSending,
@@ -51,6 +68,18 @@ function InspectionForm() {
           </div>
         )}
         <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-lg p-8">
+          {currentUser && !isGuestView && (
+            <div className="flex justify-between items-center mb-4">
+              <p className="text-sm text-gray-600">Logged in as: <span className="font-semibold">{currentUser.userName}</span></p>
+              <button
+                onClick={handleLogout}
+                className="px-4 py-2 bg-red-500 text-white text-sm rounded-md hover:bg-red-600"
+              >
+                Logout
+              </button>
+            </div>
+          )}
+
           <div ref={formContentRef}>
             <div className="flex flex-col items-center mb-8">
               <img
@@ -113,14 +142,33 @@ function InspectionForm() {
 }
 
 function App() {
+  // Ya no se usa el estado local loggedIn, se usará el de Zustand
+
+  useEffect(() => {
+    // Inicializar el estado de autenticación desde localStorage al cargar la app
+    useStore.getState().initializeAuth();
+    console.log('App.tsx: Zustand auth initialization requested.');
+  }, []); // El array vacío asegura que se ejecute solo una vez al montar
+
   return (
     <Routes>
-      <Route path="/" element={<InspectionForm />} />
-      {/* Nueva ruta para enlaces persistentes - debe ir ANTES de la ruta genérica */}
-      <Route path="/inspection/form/:formLink" element={<PersistentFormHandler />} />
-      {/* Ruta original para compatibilidad con enlaces existentes */}
-      <Route path="/inspection/:id" element={<InspectionForm />} />
-      <Route path="/thank-you" element={<ThankYou />} />
+      <Route path="/login" element={<Login />} />
+      
+      {/* Rutas Protegidas */}
+      <Route element={<ProtectedRoute />}>
+        <Route path="/" element={<InspectionForm />} />
+        {/* Nueva ruta para enlaces persistentes - debe ir ANTES de la ruta genérica */}
+        <Route path="/inspection/form/:formLink" element={<PersistentFormHandler />} />
+        {/* Ruta original para compatibilidad con enlaces existentes */}
+        <Route path="/inspection/:id" element={<InspectionForm />} />
+        <Route path="/thank-you" element={<ThankYou />} />
+      </Route>
+      
+      {/* Opcional: Una ruta catch-all para 404 si no está autenticado y no es /login */}
+      {/* Esto es más complejo de manejar aquí directamente. ProtectedRoute ya redirige a /login */}
+      {/* Si quieres una página 404 específica, considera añadirla fuera de ProtectedRoute */}
+      {/* o manejarla dentro de tus componentes de página. */}
+      {/* Por ahora, si no está autenticado y no es /login, ProtectedRoute redirigirá a /login. */}
     </Routes>
   );
 }
