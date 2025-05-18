@@ -185,7 +185,7 @@ export const PROPERTIES: Property[] = [
     name: 'Ocean Serenity Villa 2-101', 
     type: 'string', 
     required: false, 
-    cartNumber: '101', 
+    cartNumber: '104', 
     diagramType: 'oceanserenity_2_101.jpg',
     cartType: '6-Seater'
   }
