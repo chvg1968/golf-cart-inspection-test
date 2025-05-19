@@ -136,10 +136,18 @@ export class InspectionService {
       
       if (data.observations !== undefined) updateData.observations = data.observations;
       if (data.signatureData !== undefined) updateData.signature_data = data.signatureData;
-        if (data.diagramPoints !== undefined) updateData.diagram_data = { points: data.diagramPoints };
-      
-      // Si se están enviando datos de firma y términos, marcar como completado
-      if (data.signatureData && data.termsAccepted) {
+      if (data.diagramPoints !== undefined) updateData.diagram_data = { points: data.diagramPoints };
+      // if (data.termsAccepted !== undefined) updateData.terms_accepted = data.termsAccepted; // Columna no existe en BD
+
+      // Priorizar el status explícito si se pasa
+      if (data.status !== undefined) {
+        updateData.status = data.status;
+        if (data.status === 'completed') {
+          updateData.completed_at = new Date().toISOString();
+        }
+      } else if (data.signatureData && data.termsAccepted) {
+        // Lógica de fallback si status no se pasó explícitamente
+        // (aunque en nuestro caso desde handleSubmit siempre se pasa)
         updateData.status = 'completed';
         updateData.completed_at = new Date().toISOString();
       }

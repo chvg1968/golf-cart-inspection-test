@@ -253,7 +253,7 @@ const handleSubmit = async (e: React.FormEvent) => {
           setTimeout(() => {
             document.body.removeChild(a);
             URL.revokeObjectURL(downloadUrl);
-            console.log('Recursos de descarga local limpiados.');
+            // console.log('Recursos de descarga local limpiados.'); // Eliminado por solicitud
           }, 10000); // 10 segundos
 
         } catch (downloadError) {
