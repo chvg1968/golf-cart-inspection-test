@@ -18,6 +18,9 @@ import { useStore } from './store/useStore'; // ESTA ES LA IMPORTACIÓN QUE DEBE
 import ProtectedRoute from './components/ProtectedRoute'; // Importar la ruta protegida
 // Navigate se usará dentro de ProtectedRoute y posiblemente para rutas no encontradas
 
+// Placeholder para AdminDashboard - debes crear este componente
+const AdminDashboard = () => <div>Admin Dashboard Page - Coming Soon!</div>;
+
 function InspectionForm() {
   const { id } = useParams();
   const zustandLogout = useStore((state) => state.logout);
@@ -153,22 +156,20 @@ function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
-      
-      {/* Rutas Protegidas */}
+      {/* Ruta pública para el formulario de inspección de invitados */}
+      <Route path="/inspection/form/:formLink" element={<PersistentFormHandler />} />
+
+      {/* Rutas Protegidas (solo para administradores autenticados) */}
       <Route element={<ProtectedRoute />}>
         <Route path="/" element={<InspectionForm />} />
-        {/* Nueva ruta para enlaces persistentes - debe ir ANTES de la ruta genérica */}
-        <Route path="/inspection/form/:formLink" element={<PersistentFormHandler />} />
-        {/* Ruta original para compatibilidad con enlaces existentes */}
-        <Route path="/inspection/:id" element={<InspectionForm />} />
+        {/* Ruta original para compatibilidad con enlaces existentes (si son para admin) */}
+        <Route path="/inspection/:id" element={<InspectionForm />} /> 
         <Route path="/thank-you" element={<ThankYou />} />
+        <Route path="/admin" element={<AdminDashboard />} /> {/* Asegúrate de crear e importar AdminDashboard */}
       </Route>
       
-      {/* Opcional: Una ruta catch-all para 404 si no está autenticado y no es /login */}
-      {/* Esto es más complejo de manejar aquí directamente. ProtectedRoute ya redirige a /login */}
-      {/* Si quieres una página 404 específica, considera añadirla fuera de ProtectedRoute */}
-      {/* o manejarla dentro de tus componentes de página. */}
-      {/* Por ahora, si no está autenticado y no es /login, ProtectedRoute redirigirá a /login. */}
+      {/* Ruta para 404 Not Found - debe ser la última */}
+      <Route path="*" element={<div>404 Not Found</div>} />
     </Routes>
   );
 }
