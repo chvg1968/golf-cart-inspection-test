@@ -44,8 +44,7 @@ const Login = () => {
 
       if (data) {
         // Autenticación exitosa
-        console.log('Login.tsx: Token recibido:', data.token);
-        console.log('Login.tsx: Usuario recibido:', data.user);
+        
 
         try {
           // YA NO NECESITAS GUARDAR EN LOCALSTORAGE AQUÍ, ZUSTAND LO HARÁ

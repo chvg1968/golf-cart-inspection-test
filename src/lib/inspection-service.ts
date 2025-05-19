@@ -49,6 +49,7 @@ export class InspectionService {
       const formData = {
         guest_name: data.guestName,
         guest_email: data.guestEmail,
+        guest_phone: data.guestPhone || null,
         property: data.property,
         cart_type: data.cartType || null,
         cart_number: data.cartNumber || null,
@@ -106,6 +107,7 @@ export class InspectionService {
         id: data.id,
         guestName: data.guest_name,
         guestEmail: data.guest_email,
+        guestPhone: data.guest_phone,
         property: data.property,
         cartType: data.cart_type,
         cartNumber: data.cart_number,

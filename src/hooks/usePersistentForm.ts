@@ -63,6 +63,7 @@ export function usePersistentForm({ formLink }: UsePersistentFormProps): UsePers
     try {
       // Cargar el formulario usando el servicio de inspección
       const form = await InspectionService.getInspectionFormByLink(link);
+      console.log('DEBUG: Datos recibidos del servicio (form):', JSON.stringify(form, null, 2));
       
       if (!form) {
         setError('El formulario solicitado no existe o ha expirado');
@@ -78,6 +79,7 @@ export function usePersistentForm({ formLink }: UsePersistentFormProps): UsePers
 
       // Establecer los datos del formulario
       setFormData(form);
+      console.log('DEBUG: Estado formData en hook (después de setFormData):', JSON.stringify(form, null, 2));
 
       // Establecer la propiedad seleccionada
       const property = PROPERTIES.find(p => p.id === form.property);
