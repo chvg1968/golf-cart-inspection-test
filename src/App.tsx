@@ -160,11 +160,13 @@ function App() {
       <Route path="/inspection/form/:formLink" element={<PersistentFormHandler />} />
 
       {/* Rutas Protegidas (solo para administradores autenticados) */}
+      {/* Ruta pública para la página de agradecimiento */}
+      <Route path="/thank-you" element={<ThankYou />} />
+
       <Route element={<ProtectedRoute />}>
         <Route path="/" element={<InspectionForm />} />
         {/* Ruta original para compatibilidad con enlaces existentes (si son para admin) */}
         <Route path="/inspection/:id" element={<InspectionForm />} /> 
-        <Route path="/thank-you" element={<ThankYou />} />
         <Route path="/admin" element={<AdminDashboard />} /> {/* Asegúrate de crear e importar AdminDashboard */}
       </Route>
       
