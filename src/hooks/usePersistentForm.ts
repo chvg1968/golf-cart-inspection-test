@@ -196,100 +196,135 @@ export function usePersistentForm({ formLink }: UsePersistentFormProps): UsePers
     }
   };
 
-  // Manejar el envío del formulario
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData || !formLink) {
-      setError('No hay datos de formulario para enviar');
+// Modificación al método handleSubmit para asegurar la descarga correcta del PDF
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  
+  if (!formData || !formLink) {
+    setError('No hay datos de formulario para enviar');
+    return;
+  }
+  
+  setIsSending(true);
+
+  try {
+    // Validar firma
+    if (signaturePadRef.current?.isEmpty()) {
+      setError('Por favor, firme el formulario antes de enviarlo');
+      setIsSending(false);
       return;
     }
-    
-    setIsSending(true);
 
-    try {
-      // Validar firma
-      if (signaturePadRef.current?.isEmpty()) {
-        setError('Por favor, firme el formulario antes de enviarlo');
-        setIsSending(false);
-        return;
-      }
+    // Generar PDF
+    const pdfData = await generateFormPDF({
+      contentRef: formContentRef,
+      waitForComplete: true // Asegurarse que html2canvas complete su renderizado
+    });
 
-      // Generar PDF
-      const pdfData = await generateFormPDF({
-        contentRef: formContentRef,
-        waitForComplete: true
-      });
-
-      if (!pdfData) {
-        throw new Error('Error al generar el PDF');
-      }
-
-      // Subir PDF a Supabase
-      const pdfBlob = pdfData.download.blob;
-      if (!pdfBlob || pdfBlob.size === 0) {
-        throw new Error('El blob del PDF está vacío o no es válido');
-      }
-
-      const pdfFilename = `${formData.property.toLowerCase().replace(/\s+/g, '_')}_${formData.guestName.toLowerCase().replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0].replace(/-/g, '_')}.pdf`;
-      const pdfUrl = await uploadPDF(pdfBlob, pdfFilename);
-
-      if (!pdfUrl) {
-        throw new Error('Error al subir el PDF');
-      }
-
-      // Actualizar el formulario en la base de datos
-      // Se asume que si el usuario firma y envía, acepta los términos implícitamente.
-      await InspectionService.updateInspectionForm(formLink!, { // formLink es el UUID
-        signatureData: formData.signatureData!,
-        observations: formData.observations,
-        termsAccepted: true, // Siempre true al enviar
-        diagramPoints: diagramPoints,
-        status: 'completed'
-      });
-
-      // Actualizar Airtable con el enlace del PDF y cambiar estado a Signed
-      if (formData.airtable_record_id && pdfUrl) {
-        console.log(`Attempting to update Airtable record: ${formData.airtable_record_id} with PDF: ${pdfUrl}`);
-        const airtableUpdated = await AirtableService.updateAirtablePdfLink(formData.airtable_record_id, pdfUrl); // <--- LLAMADA CORREGIDA
-        if (!airtableUpdated) {
-            console.warn('Airtable status or PDF link could not be updated.');
-            // Considera si quieres notificar al usuario o manejar este error de alguna manera específica
-        } else {
-            console.log('Airtable status and PDF link successfully updated.');
-        }
-      } else {
-          console.warn('Missing airtable_record_id or pdfUrl. Cannot update Airtable.', { airtableId: formData.airtable_record_id, pdf: pdfUrl });
-      }
-
-      // Enviar correo electrónico de confirmación
-      await sendFormEmail('completed-form', {
-        to_email: formData.guestEmail,
-        to_name: formData.guestName,
-        from_name: 'Golf Cart Inspection System',
-        from_email: 'no-reply@email.golfcartinspection.app',
-        property: formData.property,
-        cart_type: formData.cartType,
-        cart_number: formData.cartNumber,
-        inspection_date: formData.inspectionDate || new Date().toISOString().split('T')[0],
-        pdf_attachment: pdfUrl,
-        diagram_points: diagramPoints,
-        observations: formData.observations,
-        isAdmin: true // Enviar copia a administradores
-      });
-
-      // Mostrar notificación de éxito
-      setNotification({ type: 'success', message: '¡Formulario enviado exitosamente!' });
-      
-      // Redirigir a la página de agradecimiento
-      navigate('/thank-you');
-    } catch (error) {
-      console.error('Error al enviar el formulario:', error);
-      setError('Error al enviar el formulario. Por favor, intente nuevamente.');
-    } finally {
-      setIsSending(false);
+    if (!pdfData || !pdfData.download || !pdfData.download.blob) {
+      throw new Error('Error al generar el PDF o el blob está vacío.');
     }
-  };
+
+    const pdfBlob = pdfData.download.blob;
+    if (pdfBlob.size === 0) {
+      throw new Error('El blob del PDF está vacío.');
+    }
+
+    const pdfFilename = `${formData.property.toLowerCase().replace(/\s+/g, '_')}_${formData.guestName.toLowerCase().replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0].replace(/-/g, '_')}.pdf`;
+    
+    // Descargar el PDF localmente - Modificado para mayor robustez
+    const downloadPdfLocally = (): Promise<void> => {
+      return new Promise((resolve, reject) => {
+        try {
+          const downloadUrl = URL.createObjectURL(pdfBlob);
+          const a = document.createElement('a');
+          a.href = downloadUrl;
+          a.download = pdfFilename;
+          document.body.appendChild(a);
+          
+          a.click(); // Inicia la descarga
+
+          // Resolver la promesa después de iniciar el clic.
+          // La limpieza se hará después de un tiempo mayor.
+          resolve(); 
+
+          // Retrasar la limpieza para dar tiempo a que la descarga se complete.
+          // Este valor puede necesitar ajustes. 10 segundos es un tiempo generoso.
+          setTimeout(() => {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(downloadUrl);
+            console.log('Recursos de descarga local limpiados.');
+          }, 10000); // 10 segundos
+
+        } catch (downloadError) {
+          console.error('Error durante la descarga local del PDF:', downloadError);
+          reject(downloadError); // Rechazar la promesa si hay un error en la descarga
+        }
+      });
+    };
+
+    // Intentar descargar el PDF localmente y esperar que se inicie
+    await downloadPdfLocally();
+    
+    // Continuamos con el resto de operaciones después de la descarga
+    const pdfUrl = await uploadPDF(pdfBlob, pdfFilename);
+
+    if (!pdfUrl) {
+      throw new Error('Error al subir el PDF');
+    }
+
+    // Actualizar el formulario en la base de datos
+    await InspectionService.updateInspectionForm(formLink!, {
+      signatureData: formData.signatureData!,
+      observations: formData.observations,
+      termsAccepted: true,
+      diagramPoints: diagramPoints,
+      status: 'completed'
+    });
+
+    // Actualizar Airtable con el enlace del PDF y cambiar estado a Signed
+    if (formData.airtable_record_id && pdfUrl) {
+      console.log(`Attempting to update Airtable record: ${formData.airtable_record_id} with PDF: ${pdfUrl}`);
+      const airtableUpdated = await AirtableService.updateAirtablePdfLink(formData.airtable_record_id, pdfUrl);
+      if (!airtableUpdated) {
+        console.warn('Airtable status or PDF link could not be updated.');
+      } else {
+        console.log('Airtable status and PDF link successfully updated.');
+      }
+    } else {
+      console.warn('Missing airtable_record_id or pdfUrl. Cannot update Airtable.', { airtableId: formData.airtable_record_id, pdf: pdfUrl });
+    }
+
+    // Enviar correo electrónico de confirmación
+    await sendFormEmail('completed-form', {
+      to_email: formData.guestEmail,
+      to_name: formData.guestName,
+      from_name: 'Golf Cart Inspection System',
+      from_email: 'no-reply@email.golfcartinspection.app',
+      property: formData.property,
+      cart_type: formData.cartType,
+      cart_number: formData.cartNumber,
+      inspection_date: formData.inspectionDate || new Date().toISOString().split('T')[0],
+      pdf_attachment: pdfUrl,
+      diagram_points: diagramPoints,
+      observations: formData.observations,
+      isAdmin: true
+    });
+
+    // Mostrar notificación de éxito
+    setNotification({ type: 'success', message: '¡Formulario enviado exitosamente!' });
+    
+    // La navegación a '/thank-you' ahora ocurre después de todas las operaciones de red.
+    // La descarga del PDF fue iniciada, y la limpieza de su URL se retrasó.
+    navigate('/thank-you');
+
+  } catch (error) {
+    console.error('Error al enviar el formulario:', error);
+    setError('Error al enviar el formulario. Por favor, intente nuevamente.');
+  } finally {
+    setIsSending(false);
+  }
+};
 
   return {
     formData,
