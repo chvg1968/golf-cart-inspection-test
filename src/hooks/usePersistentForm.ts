@@ -5,6 +5,7 @@ import { Point } from '../types';
 import { uploadPDF } from '../lib/supabase';
 import { sendFormEmail } from '../lib/email';
 import { InspectionService, InspectionFormData } from '../lib/inspection-service';
+import * as AirtableService from '../components/AirtableService'; // <--- IMPORTACIÓN CAMBIADA
 import { generateFormPDF } from '../components/PDFGenerator';
 import { PROPERTIES } from '../types';
 
@@ -27,7 +28,6 @@ interface UsePersistentFormResult {
   formContentRef: React.RefObject<HTMLDivElement>;
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
   handleSignatureChange: () => void;
-  handleTermsChange: (accepted: boolean) => void;
   handleObservationsChange: (observations: string) => void;
   handleUndo: () => void;
   handleClear: () => void;
@@ -62,7 +62,7 @@ export function usePersistentForm({ formLink }: UsePersistentFormProps): UsePers
 
     try {
       // Cargar el formulario usando el servicio de inspección
-      const form = await InspectionService.getInspectionFormByLink(`inspection/${link}`);
+      const form = await InspectionService.getInspectionFormByLink(link);
       
       if (!form) {
         setError('El formulario solicitado no existe o ha expirado');
@@ -135,12 +135,6 @@ export function usePersistentForm({ formLink }: UsePersistentFormProps): UsePers
   };
 
   // Manejar cambios en los términos
-  const handleTermsChange = (accepted: boolean) => {
-    if (formData) {
-      setFormData({ ...formData, termsAccepted: accepted });
-    }
-  };
-
   // Manejar cambios en las observaciones
   const handleObservationsChange = (observations: string) => {
     if (formData) {
@@ -213,15 +207,8 @@ export function usePersistentForm({ formLink }: UsePersistentFormProps): UsePers
 
     try {
       // Validar firma
-      if (!signaturePadRef.current?.toData()?.length) {
+      if (signaturePadRef.current?.isEmpty()) {
         setError('Por favor, firme el formulario antes de enviarlo');
-        setIsSending(false);
-        return;
-      }
-
-      // Validar términos
-      if (!formData.termsAccepted) {
-        setError('Por favor, acepte los términos y condiciones antes de enviar el formulario');
         setIsSending(false);
         return;
       }
@@ -250,13 +237,28 @@ export function usePersistentForm({ formLink }: UsePersistentFormProps): UsePers
       }
 
       // Actualizar el formulario en la base de datos
-      await InspectionService.updateInspectionForm(`inspection/${formLink}`, {
-        signatureData: formData.signatureData,
+      // Se asume que si el usuario firma y envía, acepta los términos implícitamente.
+      await InspectionService.updateInspectionForm(formLink!, { // formLink es el UUID
+        signatureData: formData.signatureData!,
         observations: formData.observations,
-        termsAccepted: formData.termsAccepted,
+        termsAccepted: true, // Siempre true al enviar
         diagramPoints: diagramPoints,
         status: 'completed'
       });
+
+      // Actualizar Airtable con el enlace del PDF y cambiar estado a Signed
+      if (formData.airtable_record_id && pdfUrl) {
+        console.log(`Attempting to update Airtable record: ${formData.airtable_record_id} with PDF: ${pdfUrl}`);
+        const airtableUpdated = await AirtableService.updateAirtablePdfLink(formData.airtable_record_id, pdfUrl); // <--- LLAMADA CORREGIDA
+        if (!airtableUpdated) {
+            console.warn('Airtable status or PDF link could not be updated.');
+            // Considera si quieres notificar al usuario o manejar este error de alguna manera específica
+        } else {
+            console.log('Airtable status and PDF link successfully updated.');
+        }
+      } else {
+          console.warn('Missing airtable_record_id or pdfUrl. Cannot update Airtable.', { airtableId: formData.airtable_record_id, pdf: pdfUrl });
+      }
 
       // Enviar correo electrónico de confirmación
       await sendFormEmail('completed-form', {
@@ -302,7 +304,6 @@ export function usePersistentForm({ formLink }: UsePersistentFormProps): UsePers
     formContentRef,
     handleInputChange,
     handleSignatureChange,
-    handleTermsChange,
     handleObservationsChange,
     handleUndo,
     handleClear,

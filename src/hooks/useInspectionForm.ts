@@ -248,19 +248,28 @@ export function useInspectionForm(id?: string) {
     if (createError) throw createError;
 
     // Generar form_id y form_link
-    const formId = `${formData.guestName.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`;
-    const formLink = `${window.location.origin}/inspection/${newInspection.id}`;
+    // formIdSlug se usa para la columna form_id, su propósito actual podría necesitar revisión,
+    // pero lo dejamos para no romper otra lógica.
+    const formIdSlug = `${formData.guestName.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`;
+    
+    // Usaremos el ID de la inspección (UUID de Supabase) como el identificador único para el acceso del invitado.
+    const guestAccessId = newInspection.id; 
+    
+    // Este es el enlace correcto y público que se debe enviar en el correo electrónico.
+    const emailLink = `${window.location.origin}/inspection/form/${guestAccessId}`;
 
-    // Actualizar la inspección
+    // Actualizar la inspección en la base de datos.
+    // Guardamos solo el 'guestAccessId' en la columna 'form_link'.
+    // La columna 'form_id' conserva el slug generado, para no interferir con otra posible lógica.
     await supabase
       .from('inspections')
       .update({
-        form_id: formId,
-        form_link: formLink
+        form_id: formIdSlug, // Columna form_id (slug)
+        form_link: guestAccessId // Columna form_link (el ID único para la URL del invitado)
       })
       .eq('id', newInspection.id);
 
-    // Enviar a Airtable
+    // Enviar a Airtable (Esta parte se mantiene igual)
     const airtableRecordId = await sendToAirtable({
       guestName: formData.guestName,
       inspectionDate: formData.inspectionDate,
@@ -271,23 +280,23 @@ export function useInspectionForm(id?: string) {
     if (airtableRecordId) {
       await supabase
         .from('inspections')
-        .update({ airtable_record_id: airtableRecordId })
-        .eq('id', newInspection.id);
+        .update({ airtable_record_id: airtableRecordId }) // Esta actualización podría combinarse con la anterior
+        .eq('id', newInspection.id);                     // si se hacen al mismo registro
     }
 
-    // Enviar email
+    // Enviar email al invitado con el enlace público correcto.
     await sendFormEmail('guest-form', {
       to_email: formData.guestEmail,
       to_name: formData.guestName,
-      from_name: 'Golf Cart Inspection System',
-      from_email: 'no-reply@email.golfcartinspection.app',
+      from_name: 'Golf Cart Inspection System', // Considera usar una variable de entorno para esto
+      from_email: 'no-reply@email.golfcartinspection.app', // Considera usar una variable de entorno para esto
       property: formData.property,
       cart_type: formData.cartType,
       cart_number: formData.cartNumber,
       inspection_date: formData.inspectionDate,
-      form_link: formLink,
-      pdf_attachment: pdfUrl,
-      diagram_points: diagramPoints
+      form_link: emailLink, // <--- Aquí va el enlace correcto para el email
+      pdf_attachment: pdfUrl, // Asumo que pdfUrl es el PDF del admin, no el que firma el invitado aún
+      diagram_points: diagramPoints // Considera si esto debe ir en el primer correo al invitado
     });
 
     setNotification({ type: 'success', message: '¡Enlace enviado exitosamente al huésped!' });

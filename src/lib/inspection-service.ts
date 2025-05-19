@@ -18,6 +18,7 @@ export interface InspectionFormData {
   termsAccepted?: boolean;
   status?: 'pending' | 'completed';
   formLink?: string;
+  airtable_record_id?: string; // Añadido para el ID de Airtable
 }
 
 export interface InspectionFormResponse {
@@ -59,12 +60,14 @@ export class InspectionService {
       
       // Insertar en la base de datos
       const { data: insertedForm, error } = await supabase
-        .from('inspection_forms')
+        .from('inspections')
         .insert(formData)
         .select('id, form_link, status')
         .single();
       
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
       
       return {
         id: insertedForm.id,
@@ -83,7 +86,7 @@ export class InspectionService {
   static async getInspectionFormByLink(formLink: string): Promise<InspectionFormData | null> {
     try {
       const { data, error } = await supabase
-        .from('inspection_forms')
+        .from('inspections') // Cambiado a 'inspections'
         .select('*')
         .eq('form_link', formLink)
         .single();
@@ -112,7 +115,8 @@ export class InspectionService {
         signatureData: data.signature_data,
         termsAccepted: data.terms_accepted,
         status: data.status as 'pending' | 'completed',
-        formLink: data.form_link
+        formLink: data.form_link,
+        airtable_record_id: data.airtable_record_id // Añadido para el ID de Airtable
       };
     } catch (error) {
       console.error('Error getting inspection form:', error);
@@ -130,8 +134,7 @@ export class InspectionService {
       
       if (data.observations !== undefined) updateData.observations = data.observations;
       if (data.signatureData !== undefined) updateData.signature_data = data.signatureData;
-      if (data.termsAccepted !== undefined) updateData.terms_accepted = data.termsAccepted;
-      if (data.diagramPoints !== undefined) updateData.diagram_data = { points: data.diagramPoints };
+        if (data.diagramPoints !== undefined) updateData.diagram_data = { points: data.diagramPoints };
       
       // Si se están enviando datos de firma y términos, marcar como completado
       if (data.signatureData && data.termsAccepted) {
@@ -140,11 +143,14 @@ export class InspectionService {
       }
       
       const { error } = await supabase
-        .from('inspection_forms')
+        .from('inspections') // Cambiado a 'inspections'
         .update(updateData)
         .eq('form_link', formLink);
       
-      if (error) throw error;
+        if (error) {
+          console.error('Supabase error details in updateInspectionForm:', JSON.stringify(error, null, 2));
+          throw error;
+        }
       
       return true;
     } catch (error) {
