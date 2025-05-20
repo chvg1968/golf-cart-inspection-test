@@ -1,4 +1,5 @@
 import React from 'react';
+import OrientationWarning from './OrientationWarning';
 import { useParams } from 'react-router-dom';
 import { usePersistentForm } from '../hooks/usePersistentForm';
 import { LoadingSpinner } from './LoadingSpinner';
@@ -40,39 +41,60 @@ const PersistentFormHandler: React.FC = () => {
   } = usePersistentForm({ formLink });
 
 
+  // Mostrar advertencia de orientación en móviles
+  // Esto asegura que el mensaje se muestre también en el flujo del cliente
+  // y mantiene la UI consistente
+
+  // Renderiza la advertencia de orientación SIEMPRE en la pantalla de formulario persistente
+  // (antes de cualquier return condicional)
+  // Esto permite que el mensaje se muestre correctamente en móviles y simuladores
+  
+  const orientationWarning = <OrientationWarning />;
+
   if (isLoading) {
-    return <LoadingSpinner />;
+    return (
+      <>
+        {orientationWarning}
+        <LoadingSpinner />
+      </>
+    );
   }
 
   if (error) {
     return (
-      <div className="p-6 max-w-lg mx-auto bg-white rounded-lg shadow-md">
-        <h2 className="text-xl font-bold text-red-600 mb-4">Error</h2>
-        <p className="text-gray-700 mb-4">{error}</p>
-        <a
-          href="/"
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 inline-block"
-        >
-          Volver al inicio
-        </a>
-      </div>
+      <>
+        {orientationWarning}
+        <div className="p-6 max-w-lg mx-auto bg-white rounded-lg shadow-md">
+          <h2 className="text-xl font-bold text-red-600 mb-4">Error</h2>
+          <p className="text-gray-700 mb-4">{error}</p>
+          <a
+            href="/"
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 inline-block"
+          >
+            Volver al inicio
+          </a>
+        </div>
+      </>
     );
   }
 
   if (!formData) {
     return (
-      <div className="p-6 max-w-lg mx-auto bg-white rounded-lg shadow-md">
-        <h2 className="text-xl font-bold mb-4">Formulario no encontrado</h2>
-        <p className="text-gray-700 mb-4">
-          No se pudo encontrar el formulario solicitado. Es posible que el enlace sea incorrecto o haya expirado.
-        </p>
-        <a
-          href="/"
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 inline-block"
-        >
-          Volver al inicio
-        </a>
-      </div>
+      <>
+        {orientationWarning}
+        <div className="p-6 max-w-lg mx-auto bg-white rounded-lg shadow-md">
+          <h2 className="text-xl font-bold mb-4">Formulario no encontrado</h2>
+          <p className="text-gray-700 mb-4">
+            No se pudo encontrar el formulario solicitado. Es posible que el enlace sea incorrecto o haya expirado.
+          </p>
+          <a
+            href="/"
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 inline-block"
+          >
+            Volver al inicio
+          </a>
+        </div>
+      </>
     );
   }
 
@@ -150,6 +172,6 @@ const PersistentFormHandler: React.FC = () => {
       </div>
     </div>
   );
-};
+}
 
 export default PersistentFormHandler;
