@@ -230,7 +230,15 @@ const handleSubmit = async (e: React.FormEvent) => {
       throw new Error('El blob del PDF está vacío.');
     }
 
-    const pdfFilename = `${formData.property.toLowerCase().replace(/\s+/g, '_')}_${formData.guestName.toLowerCase().replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0].replace(/-/g, '_')}.pdf`;
+    // Generar nombre de archivo seguro reemplazando caracteres especiales
+    const safeProperty = formData.property.toLowerCase().replace(/[^a-z0-9]/g, '_');
+    const safeGuestName = formData.guestName.toLowerCase().replace(/[^a-z0-9]/g, '_');
+    const safeDate = new Date().toISOString()
+      .replace(/[:.]/g, '_')  // Reemplazar : y .
+      .replace(/[TZ]/g, '_')   // Reemplazar T y Z
+      .replace(/\+\d{4}/, ''); // Eliminar offset de zona horaria
+    
+    const pdfFilename = `${safeProperty}_${safeGuestName}_${safeDate}.pdf`;
     
     // Descargar el PDF localmente - Modificado para mayor robustez
     const downloadPdfLocally = (): Promise<void> => {
