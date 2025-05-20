@@ -146,7 +146,7 @@ export const PROPERTIES: Property[] = [
   },
   { 
     id: 'apt_2_102_72', 
-    name: 'Apt 2-102 #72', 
+    name: 'Ocean Bliss Villa 2-102', 
     type: 'string', 
     required: false, 
     cartNumber: '72', 

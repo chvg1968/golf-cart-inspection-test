@@ -164,7 +164,7 @@ const PersistentFormHandler: React.FC = () => {
                 disabled={isSending}
                 className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isSending ? 'Procesando...' : 'Sign and Download PDF'}
+                {isSending ? 'Processing...' : 'Sign and Download PDF'}
               </button>
             </div>
           </form>
