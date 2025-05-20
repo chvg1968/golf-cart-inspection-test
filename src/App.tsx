@@ -154,7 +154,9 @@ function App() {
   }, []); // El array vacío asegura que se ejecute solo una vez al montar
 
   return (
-    <Routes>
+    <>
+      <OrientationWarning />
+      <Routes>
       <Route path="/login" element={<Login />} />
       {/* Ruta pública para el formulario de inspección de invitados */}
       <Route path="/inspection/form/:formLink" element={<PersistentFormHandler />} />
@@ -173,6 +175,7 @@ function App() {
       {/* Ruta para 404 Not Found - debe ser la última */}
       <Route path="*" element={<div>404 Not Found</div>} />
     </Routes>
+    </>
   );
 }
 
