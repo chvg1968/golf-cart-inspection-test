@@ -345,24 +345,31 @@ export function useInspectionForm(id?: string) {
       }
     }
 
-    // Enviar correos
-    await Promise.all([
+    // Enviar correo de confirmación al huésped
+    await sendFormEmail('completed-form', {
+      to_email: formData.guestEmail,
+      to_name: formData.guestName,
+      from_name: 'Golf Cart Inspection System',
+      from_email: import.meta.env.VITE_SENDER_EMAIL,
+      property: formData.property,
+      cart_type: formData.cartType,
+      cart_number: formData.cartNumber,
+      inspection_date: formData.inspectionDate,
+      observations: formData.observations,
+      form_id: id,
+      isAdmin: false // Importante: esto debe ser false para que el huésped reciba la confirmación
+    });
+
+    // Enviar notificación a todos los administradores
+    const adminEmails = import.meta.env.VITE_ADMIN_EMAIL
+      ? import.meta.env.VITE_ADMIN_EMAIL.split(',').map((email: string) => email.trim())
+      : [];
+
+    // Enviar correo a cada administrador
+    await Promise.all(adminEmails.map((adminEmail: string) => 
       sendFormEmail('completed-form', {
-        to_email: formData.guestEmail,
-        to_name: formData.guestName,
-        from_name: 'Golf Cart Inspection System',
-        from_email: import.meta.env.VITE_SENDER_EMAIL,
-        property: formData.property,
-        cart_type: formData.cartType,
-        cart_number: formData.cartNumber,
-        inspection_date: formData.inspectionDate,
-        observations: formData.observations,
-        form_id: id,
-        isAdmin: false
-      }),
-      sendFormEmail('completed-form', {
-        to_email: formData.guestEmail,
-        to_name: formData.guestName,
+        to_email: adminEmail,
+        to_name: 'Administrator',
         from_name: 'Golf Cart Inspection System',
         from_email: import.meta.env.VITE_SENDER_EMAIL,
         property: formData.property,
@@ -375,7 +382,7 @@ export function useInspectionForm(id?: string) {
         isAdmin: true,
         skipAdminAlert: true
       })
-    ]);
+    ));
 
     navigate('/thank-you');
   };

@@ -295,7 +295,7 @@ const handleSubmit = async (e: React.FormEvent) => {
       console.warn('Missing airtable_record_id or pdfUrl. Cannot update Airtable.', { airtableId: formData.airtable_record_id, pdf: pdfUrl });
     }
 
-    // Enviar correo electrónico de confirmación
+    // Enviar correo de confirmación al huésped
     await sendFormEmail('completed-form', {
       to_email: formData.guestEmail,
       to_name: formData.guestName,
@@ -305,11 +305,34 @@ const handleSubmit = async (e: React.FormEvent) => {
       cart_type: formData.cartType,
       cart_number: formData.cartNumber,
       inspection_date: formData.inspectionDate || new Date().toISOString().split('T')[0],
-      pdf_attachment: pdfUrl,
       diagram_points: diagramPoints,
       observations: formData.observations,
-      isAdmin: false
+      isAdmin: false // Importante: para que el huésped reciba la confirmación
     });
+
+    // Enviar notificación a todos los administradores
+    const adminEmails = import.meta.env.VITE_ADMIN_EMAIL
+      ? import.meta.env.VITE_ADMIN_EMAIL.split(',').map((email: string) => email.trim())
+      : [];
+
+    // Enviar correo a cada administrador
+    await Promise.all(adminEmails.map((adminEmail: string) => 
+      sendFormEmail('completed-form', {
+        to_email: adminEmail,
+        to_name: 'Administrator',
+        from_name: 'Golf Cart Inspection System',
+        from_email: import.meta.env.VITE_SENDER_EMAIL,
+        property: formData.property,
+        cart_type: formData.cartType,
+        cart_number: formData.cartNumber,
+        inspection_date: formData.inspectionDate || new Date().toISOString().split('T')[0],
+        pdf_attachment: pdfUrl,
+        diagram_points: diagramPoints,
+        observations: formData.observations,
+        isAdmin: true,
+        skipAdminAlert: true
+      })
+    ));
 
     // Mostrar notificación de éxito
     setNotification({ type: 'success', message: '¡Formulario enviado exitosamente!' });
