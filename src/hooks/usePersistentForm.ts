@@ -334,8 +334,8 @@ const handleSubmit = async (e: React.FormEvent) => {
     // Enviar notificación a los administradores
     // El servicio de correo se encargará de enviar a todos los administradores configurados
     await sendFormEmail('completed-form', {
-      to_email: 'admin@example.com', // Este valor será sobrescrito por el servicio
-      to_name: 'Administrator',
+      to_email: formData.guestEmail, // Este valor será sobrescrito por el servicio
+      to_name: formData.guestName,
       from_name: 'Golf Cart Inspection System',
       from_email: import.meta.env.VITE_SENDER_EMAIL,
       property: formData.property,
