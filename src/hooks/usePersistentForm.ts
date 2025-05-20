@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import SignaturePad from 'react-signature-canvas';
 import { Point } from '../types';
 import { uploadPDF } from '../lib/supabase';
+import { getFormCompletedAdminEmails } from '../lib/config';
 import { sendFormEmail } from '../lib/email';
 import { InspectionService, InspectionFormData } from '../lib/inspection-service';
 import * as AirtableService from '../components/AirtableService'; // <--- IMPORTACIÓN CAMBIADA
@@ -310,11 +311,9 @@ const handleSubmit = async (e: React.FormEvent) => {
       isAdmin: false // Importante: para que el huésped reciba la confirmación
     });
 
-    // Enviar notificación a todos los administradores
-    const adminEmails = import.meta.env.VITE_ADMIN_EMAIL
-      ? import.meta.env.VITE_ADMIN_EMAIL.split(',').map((email: string) => email.trim())
-      : [];
-
+    // Obtener la lista de administradores para notificaciones de formulario completado
+    const adminEmails = getFormCompletedAdminEmails();
+    
     // Enviar correo a cada administrador
     await Promise.all(adminEmails.map((adminEmail: string) => 
       sendFormEmail('completed-form', {

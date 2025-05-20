@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import SignaturePad from 'react-signature-canvas';
 import { Point } from '../types';
 import { supabase, getDiagramMarks, uploadPDF } from '../lib/supabase';
+import { getFormCompletedAdminEmails } from '../lib/config';
 import { sendFormEmail } from '../lib/email';
 import { sendToAirtable, updateAirtablePdfLink } from '../components/AirtableService';
 import { generateFormPDF } from '../components/PDFGenerator';
@@ -360,11 +361,9 @@ export function useInspectionForm(id?: string) {
       isAdmin: false // Importante: esto debe ser false para que el huésped reciba la confirmación
     });
 
-    // Enviar notificación a todos los administradores
-    const adminEmails = import.meta.env.VITE_ADMIN_EMAIL
-      ? import.meta.env.VITE_ADMIN_EMAIL.split(',').map((email: string) => email.trim())
-      : [];
-
+    // Obtener la lista de administradores para notificaciones de formulario completado
+    const adminEmails = getFormCompletedAdminEmails();
+    
     // Enviar correo a cada administrador
     await Promise.all(adminEmails.map((adminEmail: string) => 
       sendFormEmail('completed-form', {
