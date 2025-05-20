@@ -11,8 +11,7 @@ const OrientationWarning: React.FC = () => {
     function handleOrientationChange() {
       // Use both methods for better compatibility
       const isPortrait = window.matchMedia('(orientation: portrait)').matches;
-      const isSmallScreen = window.innerWidth < 700;
-      setShow(isPortrait && isSmallScreen);
+      setShow(isPortrait);
     }
     handleOrientationChange();
     window.addEventListener('resize', handleOrientationChange);
