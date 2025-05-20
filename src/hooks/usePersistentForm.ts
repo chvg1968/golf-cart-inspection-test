@@ -5,9 +5,10 @@ import { Point } from '../types';
 import { uploadPDF } from '../lib/supabase';
 import { sendFormEmail } from '../lib/email';
 import { InspectionService, InspectionFormData } from '../lib/inspection-service';
-import * as AirtableService from '../components/AirtableService'; // <--- IMPORTACIÓN CAMBIADA
+import * as AirtableService from '../components/AirtableService';
 import { generateFormPDF } from '../components/PDFGenerator';
 import { PROPERTIES } from '../types';
+import { isIOS, isSafari } from '../utils/platform';
 
 interface UsePersistentFormProps {
   formLink?: string;
@@ -240,33 +241,45 @@ const handleSubmit = async (e: React.FormEvent) => {
     
     const pdfFilename = `${safeProperty}_${safeGuestName}_${safeDate}.pdf`;
     
-    // Descargar el PDF localmente - Modificado para mayor robustez
+    // Descargar el PDF localmente con soporte para iOS
     const downloadPdfLocally = (): Promise<void> => {
       return new Promise((resolve, reject) => {
         try {
-          const downloadUrl = URL.createObjectURL(pdfBlob);
-          const a = document.createElement('a');
-          a.href = downloadUrl;
-          a.download = pdfFilename;
-          document.body.appendChild(a);
-          
-          a.click(); // Inicia la descarga
+          if (isIOS() && isSafari()) {
+            // En iOS Safari, abrimos el PDF en una nueva pestaña
+            // Esto permite al usuario usar el menú nativo de compartir/guardar
+            const reader = new FileReader();
+            reader.onload = function() {
+              const dataUrl = reader.result as string;
+              // Abrir en nueva pestaña para permitir al usuario guardar/compartir
+              window.open(dataUrl, '_blank');
+              resolve();
+            };
+            reader.onerror = function(error) {
+              console.error('Error al leer el PDF:', error);
+              reject(error);
+            };
+            reader.readAsDataURL(pdfBlob);
+          } else {
+            // Para otros dispositivos, usar el método tradicional
+            const downloadUrl = URL.createObjectURL(pdfBlob);
+            const a = document.createElement('a');
+            a.href = downloadUrl;
+            a.download = pdfFilename;
+            document.body.appendChild(a);
+            
+            a.click();
+            resolve();
 
-          // Resolver la promesa después de iniciar el clic.
-          // La limpieza se hará después de un tiempo mayor.
-          resolve(); 
-
-          // Retrasar la limpieza para dar tiempo a que la descarga se complete.
-          // Este valor puede necesitar ajustes. 10 segundos es un tiempo generoso.
-          setTimeout(() => {
-            document.body.removeChild(a);
-            URL.revokeObjectURL(downloadUrl);
-            // console.log('Recursos de descarga local limpiados.'); // Eliminado por solicitud
-          }, 10000); // 10 segundos
-
+            // Limpieza después de un tiempo
+            setTimeout(() => {
+              document.body.removeChild(a);
+              URL.revokeObjectURL(downloadUrl);
+            }, 10000);
+          }
         } catch (downloadError) {
           console.error('Error durante la descarga local del PDF:', downloadError);
-          reject(downloadError); // Rechazar la promesa si hay un error en la descarga
+          reject(downloadError);
         }
       });
     };
