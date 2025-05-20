@@ -300,7 +300,7 @@ const handleSubmit = async (e: React.FormEvent) => {
       to_email: formData.guestEmail,
       to_name: formData.guestName,
       from_name: 'Golf Cart Inspection System',
-      from_email: 'no-reply@email.golfcartinspection.app',
+      from_email: import.meta.env.VITE_SENDER_EMAIL,
       property: formData.property,
       cart_type: formData.cartType,
       cart_number: formData.cartNumber,
@@ -308,7 +308,7 @@ const handleSubmit = async (e: React.FormEvent) => {
       pdf_attachment: pdfUrl,
       diagram_points: diagramPoints,
       observations: formData.observations,
-      isAdmin: true
+      isAdmin: false
     });
 
     // Mostrar notificación de éxito

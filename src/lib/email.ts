@@ -65,7 +65,7 @@ export async function sendFormEmail(type: 'guest-form' | 'completed-form', param
         formLink: params.form_link,
         pdfBase64: params.pdf_attachment,
         diagramPoints: params.diagram_points,
-        replyTo: params.reply_to || 'support@luxepropertiespr.com',
+        replyTo: params.reply_to || 'support@mail.luxepropertiespr.com',
         isAdmin: params.isAdmin,
         skipAdminAlert: params.isAdmin ? true : params.skipAdminAlert,
         adminAlert: params.adminAlert,

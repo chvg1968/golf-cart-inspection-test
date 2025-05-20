@@ -31,7 +31,6 @@ const PersistentFormHandler: React.FC = () => {
     formContentRef,
     handleInputChange,
     handleSignatureChange,
-    handleTermsChange,
     handleObservationsChange,
     handleUndo,
     handleClear,

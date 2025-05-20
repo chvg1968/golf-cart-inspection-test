@@ -9,6 +9,7 @@ import { generateFormPDF } from '../components/PDFGenerator';
 import { useStore } from '../store/useStore';
 import { PROPERTIES } from '../types';
 
+
 export function useInspectionForm(id?: string) {
   const navigate = useNavigate();
   const {
@@ -289,7 +290,7 @@ export function useInspectionForm(id?: string) {
       to_email: formData.guestEmail,
       to_name: formData.guestName,
       from_name: 'Golf Cart Inspection System', // Considera usar una variable de entorno para esto
-      from_email: 'no-reply@email.golfcartinspection.app', // Considera usar una variable de entorno para esto
+      from_email:import.meta.env.VITE_SENDER_EMAIL, // Actualizado para usar SENDER_EMAIL de .env
       property: formData.property,
       cart_type: formData.cartType,
       cart_number: formData.cartNumber,
@@ -350,7 +351,7 @@ export function useInspectionForm(id?: string) {
         to_email: formData.guestEmail,
         to_name: formData.guestName,
         from_name: 'Golf Cart Inspection System',
-        from_email: 'no-reply@email.golfcartinspection.app',
+        from_email: import.meta.env.VITE_SENDER_EMAIL,
         property: formData.property,
         cart_type: formData.cartType,
         cart_number: formData.cartNumber,
@@ -363,7 +364,7 @@ export function useInspectionForm(id?: string) {
         to_email: formData.guestEmail,
         to_name: formData.guestName,
         from_name: 'Golf Cart Inspection System',
-        from_email: 'no-reply@email.golfcartinspection.app',
+        from_email: import.meta.env.VITE_SENDER_EMAIL,
         property: formData.property,
         cart_type: formData.cartType,
         cart_number: formData.cartNumber,
