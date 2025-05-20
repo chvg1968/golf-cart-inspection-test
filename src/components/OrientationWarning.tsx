@@ -8,21 +8,12 @@ const OrientationWarning: React.FC = () => {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
-    console.log('[OrientationWarning] MOUNTED');
-    return () => {
-      console.log('[OrientationWarning] UNMOUNTED');
-    };
+    // Limpieza de logs de depuración
+    return () => {};
   }, []);
 
   useEffect(() => {
     function handleOrientationChange() {
-  console.log('[OrientationWarning] handleOrientationChange', {
-    innerWidth: window.innerWidth,
-    innerHeight: window.innerHeight,
-    isPortrait: window.matchMedia('(orientation: portrait)').matches,
-    orientation: window.screen.orientation?.type,
-  });
-      // Use both methods for better compatibility
       const isPortrait = window.matchMedia('(orientation: portrait)').matches;
       setShow(isPortrait);
     }
