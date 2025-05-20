@@ -3,13 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import SignaturePad from 'react-signature-canvas';
 import { Point } from '../types';
 import { supabase, getDiagramMarks, uploadPDF } from '../lib/supabase';
-import { getFormCompletedAdminEmails } from '../lib/config';
 import { sendFormEmail } from '../lib/email';
 import { sendToAirtable, updateAirtablePdfLink } from '../components/AirtableService';
 import { generateFormPDF } from '../components/PDFGenerator';
 import { useStore } from '../store/useStore';
 import { PROPERTIES } from '../types';
-
 
 export function useInspectionForm(id?: string) {
   const navigate = useNavigate();
@@ -361,27 +359,23 @@ export function useInspectionForm(id?: string) {
       isAdmin: false // Importante: esto debe ser false para que el huésped reciba la confirmación
     });
 
-    // Obtener la lista de administradores para notificaciones de formulario completado
-    const adminEmails = getFormCompletedAdminEmails();
-    
-    // Enviar correo a cada administrador
-    await Promise.all(adminEmails.map((adminEmail: string) => 
-      sendFormEmail('completed-form', {
-        to_email: adminEmail,
-        to_name: 'Administrator',
-        from_name: 'Golf Cart Inspection System',
-        from_email: import.meta.env.VITE_SENDER_EMAIL,
-        property: formData.property,
-        cart_type: formData.cartType,
-        cart_number: formData.cartNumber,
-        inspection_date: formData.inspectionDate,
-        observations: formData.observations,
-        formId: id,
-        pdf_attachment: pdfUrl,
-        isAdmin: true,
-        skipAdminAlert: true
-      })
-    ));
+    // Enviar notificación a los administradores
+    // El servicio de correo se encargará de enviar a todos los administradores configurados
+    await sendFormEmail('completed-form', {
+      to_email: 'admin@example.com', // Este valor será sobrescrito por el servicio
+      to_name: 'Administrator',
+      from_name: 'Golf Cart Inspection System',
+      from_email: import.meta.env.VITE_SENDER_EMAIL,
+      property: formData.property,
+      cart_type: formData.cartType,
+      cart_number: formData.cartNumber,
+      inspection_date: formData.inspectionDate,
+      observations: formData.observations,
+      formId: id,
+      pdf_attachment: pdfUrl,
+      isAdmin: true,
+      skipAdminAlert: true
+    });
 
     navigate('/thank-you');
   };

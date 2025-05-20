@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import SignaturePad from 'react-signature-canvas';
 import { Point } from '../types';
 import { uploadPDF } from '../lib/supabase';
-import { getFormCompletedAdminEmails } from '../lib/config';
 import { sendFormEmail } from '../lib/email';
 import { InspectionService, InspectionFormData } from '../lib/inspection-service';
 import * as AirtableService from '../components/AirtableService'; // <--- IMPORTACIÓN CAMBIADA
@@ -311,27 +310,23 @@ const handleSubmit = async (e: React.FormEvent) => {
       isAdmin: false // Importante: para que el huésped reciba la confirmación
     });
 
-    // Obtener la lista de administradores para notificaciones de formulario completado
-    const adminEmails = getFormCompletedAdminEmails();
-    
-    // Enviar correo a cada administrador
-    await Promise.all(adminEmails.map((adminEmail: string) => 
-      sendFormEmail('completed-form', {
-        to_email: adminEmail,
-        to_name: 'Administrator',
-        from_name: 'Golf Cart Inspection System',
-        from_email: import.meta.env.VITE_SENDER_EMAIL,
-        property: formData.property,
-        cart_type: formData.cartType,
-        cart_number: formData.cartNumber,
-        inspection_date: formData.inspectionDate || new Date().toISOString().split('T')[0],
-        pdf_attachment: pdfUrl,
-        diagram_points: diagramPoints,
-        observations: formData.observations,
-        isAdmin: true,
-        skipAdminAlert: true
-      })
-    ));
+    // Enviar notificación a los administradores
+    // El servicio de correo se encargará de enviar a todos los administradores configurados
+    await sendFormEmail('completed-form', {
+      to_email: 'admin@example.com', // Este valor será sobrescrito por el servicio
+      to_name: 'Administrator',
+      from_name: 'Golf Cart Inspection System',
+      from_email: import.meta.env.VITE_SENDER_EMAIL,
+      property: formData.property,
+      cart_type: formData.cartType,
+      cart_number: formData.cartNumber,
+      inspection_date: formData.inspectionDate || new Date().toISOString().split('T')[0],
+      pdf_attachment: pdfUrl,
+      diagram_points: diagramPoints,
+      observations: formData.observations,
+      isAdmin: true,
+      skipAdminAlert: true
+    });
 
     // Mostrar notificación de éxito
     setNotification({ type: 'success', message: '¡Formulario enviado exitosamente!' });
