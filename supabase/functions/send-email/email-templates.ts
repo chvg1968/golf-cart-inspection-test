@@ -24,7 +24,7 @@ export function generarContenidoFormularioCreado(
   return {
     from: getDefaultSender(),
     to: [guestEmail!],
-    subject: `Golf Cart Inspection Form for ${property}`,
+    subject: `⏰ Action Required: Golf Cart Inspection for ${property} - Sign Now to Proceed`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <img src="https://luxepropertiespr.com/wp-content/uploads/2024/09/LOGO.png" alt="Luxe Properties Logo" style="max-width: 200px; margin-bottom: 20px;">
