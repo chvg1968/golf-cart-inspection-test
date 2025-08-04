@@ -1,7 +1,7 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { RotateCcw, Trash2 } from 'lucide-react';
-import { Point, Property } from '../types';
-import { getCartDiagramUrl } from '../lib/supabase';
+import React, { useRef, useState, useEffect, useCallback } from "react";
+import { RotateCcw, Trash2 } from "lucide-react";
+import { Point, Property } from "../types";
+import { getCartDiagramUrl } from "../lib/supabase";
 
 interface DiagramCanvasProps {
   isGuestView: boolean;
@@ -13,20 +13,23 @@ interface DiagramCanvasProps {
   onPointsChange: (points: Point[]) => void;
 }
 
-type DiagramColor = 'red' | '#00FF7F' | '#BF40BF' | '#FFD700' | '#FFD700';
+type DiagramColor = "red" | "#00FF7F" | "#BF40BF" | "#FFD700" | "#FFD700";
 
-const COLOR_OPTIONS: Array<{ color: DiagramColor; label: string; type?: 'x' | 'check' }> = [
-  { color: 'red', label: 'Scratches' },
-  { color: '#00FF7F', label: 'Missing Parts' },
-  { color: '#BF40BF', label: 'Damages/Impacts' },
-  { color: '#FFD700', label: 'Lights', type: 'x' },
-  { color: '#FFD700', label: 'Lights', type: 'check' }
+const COLOR_OPTIONS: Array<{
+  color: DiagramColor;
+  label: string;
+  type?: "x" | "check";
+}> = [
+  { color: "red", label: "Scratches" },
+  { color: "#00FF7F", label: "Missing Parts" },
+  { color: "#BF40BF", label: "Damages/Impacts" },
+  { color: "#FFD700", label: "Lights", type: "x" },
+  { color: "#FFD700", label: "Lights", type: "check" },
 ] as const;
 
 const CANVAS_WIDTH = 1200;
 const CANVAS_HEIGHT = 700;
 const POINT_SIZE = 6;
-
 
 export function DiagramCanvas({
   isGuestView,
@@ -38,10 +41,14 @@ export function DiagramCanvas({
   onPointsChange,
 }: DiagramCanvasProps) {
   const [isDrawing, setIsDrawing] = useState(false);
-  const [currentColor, setCurrentColor] = useState<DiagramColor>(COLOR_OPTIONS[0].color);
-  const [currentType, setCurrentType] = useState<'x' | 'check' | undefined>(undefined);
+  const [currentColor, setCurrentColor] = useState<DiagramColor>(
+    COLOR_OPTIONS[0].color,
+  );
+  const [currentType, setCurrentType] = useState<"x" | "check" | undefined>(
+    undefined,
+  );
   const [currentPath, setCurrentPath] = useState<Point[]>([]);
-  
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const backgroundCanvasRef = useRef<HTMLCanvasElement>(null);
   const currentPointsRef = useRef<Point[]>([]);
@@ -49,9 +56,9 @@ export function DiagramCanvas({
   // Redraw the entire canvas
   const redrawCanvas = useCallback(() => {
     if (!canvasRef.current) return;
-    
+
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     // Clear canvas
@@ -60,9 +67,9 @@ export function DiagramCanvas({
     // Draw history points
     const points = currentPointsRef.current;
 
-    points.forEach(point => {
+    points.forEach((point) => {
       ctx.beginPath();
-      if (point.type === 'x') {
+      if (point.type === "x") {
         // Dibujar X
         const size = point.size;
         ctx.moveTo(point.x - size, point.y - size);
@@ -72,12 +79,12 @@ export function DiagramCanvas({
         ctx.strokeStyle = point.color;
         ctx.lineWidth = 3;
         ctx.stroke();
-      } else if (point.type === 'check') {
+      } else if (point.type === "check") {
         // Dibujar check
         const size = point.size;
         ctx.moveTo(point.x - size, point.y);
         ctx.lineTo(point.x, point.y + size);
-        ctx.lineTo(point.x + size, point.y - size/2);
+        ctx.lineTo(point.x + size, point.y - size / 2);
         ctx.strokeStyle = point.color;
         ctx.lineWidth = 3;
         ctx.stroke();
@@ -88,14 +95,13 @@ export function DiagramCanvas({
         ctx.fill();
       }
       ctx.closePath();
-
     });
-    
+
     // Draw current path only if no es guest view
     if (!isGuestView) {
-      currentPath.forEach(point => {
+      currentPath.forEach((point) => {
         ctx.beginPath();
-        if (point.type === 'x') {
+        if (point.type === "x") {
           // Dibujar X
           const size = point.size;
           ctx.moveTo(point.x - size, point.y - size);
@@ -105,12 +111,12 @@ export function DiagramCanvas({
           ctx.strokeStyle = point.color;
           ctx.lineWidth = 3;
           ctx.stroke();
-        } else if (point.type === 'check') {
+        } else if (point.type === "check") {
           // Dibujar check
           const size = point.size;
           ctx.moveTo(point.x - size, point.y);
           ctx.lineTo(point.x, point.y + size);
-          ctx.lineTo(point.x + size, point.y - size/2);
+          ctx.lineTo(point.x + size, point.y - size / 2);
           ctx.strokeStyle = point.color;
           ctx.lineWidth = 3;
           ctx.stroke();
@@ -129,7 +135,6 @@ export function DiagramCanvas({
   useEffect(() => {
     if (history[currentStep]) {
       currentPointsRef.current = history[currentStep];
-
     } else {
       currentPointsRef.current = [];
     }
@@ -137,41 +142,44 @@ export function DiagramCanvas({
   }, [history, currentStep, redrawCanvas]);
 
   // Initialize background canvas with image
-  const initBackgroundCanvas = useCallback((img: HTMLImageElement) => {
-    if (!backgroundCanvasRef.current || !canvasRef.current) return;
-    
-    const bgCanvas = backgroundCanvasRef.current;
-    const drawCanvas = canvasRef.current;
-    const bgCtx = bgCanvas.getContext('2d');
-    if (!bgCtx) return;
+  const initBackgroundCanvas = useCallback(
+    (img: HTMLImageElement) => {
+      if (!backgroundCanvasRef.current || !canvasRef.current) return;
 
-    // Calculate dimensions maintaining aspect ratio
-    let canvasWidth = img.width;
-    let canvasHeight = img.height;
-    
-    // Scale down if image is too large
-    if (canvasWidth > CANVAS_WIDTH || canvasHeight > CANVAS_HEIGHT) {
-      const scaleWidth = CANVAS_WIDTH / canvasWidth;
-      const scaleHeight = CANVAS_HEIGHT / canvasHeight;
-      const scale = Math.min(scaleWidth, scaleHeight);
-      
-      canvasWidth = Math.floor(canvasWidth * scale);
-      canvasHeight = Math.floor(canvasHeight * scale);
-    }
-    
-    // Set canvas dimensions to match scaled image
-    bgCanvas.width = canvasWidth;
-    bgCanvas.height = canvasHeight;
-    drawCanvas.width = canvasWidth;
-    drawCanvas.height = canvasHeight;
-    
-    // Clear and draw image
-    bgCtx.clearRect(0, 0, canvasWidth, canvasHeight);
-    bgCtx.drawImage(img, 0, 0, canvasWidth, canvasHeight);
-    
-    // Redibujar los puntos después de cargar la imagen
-    requestAnimationFrame(redrawCanvas); // Usar requestAnimationFrame para mejor sincronización
-  }, [redrawCanvas]);
+      const bgCanvas = backgroundCanvasRef.current;
+      const drawCanvas = canvasRef.current;
+      const bgCtx = bgCanvas.getContext("2d");
+      if (!bgCtx) return;
+
+      // Calculate dimensions maintaining aspect ratio
+      let canvasWidth = img.width;
+      let canvasHeight = img.height;
+
+      // Scale down if image is too large
+      if (canvasWidth > CANVAS_WIDTH || canvasHeight > CANVAS_HEIGHT) {
+        const scaleWidth = CANVAS_WIDTH / canvasWidth;
+        const scaleHeight = CANVAS_HEIGHT / canvasHeight;
+        const scale = Math.min(scaleWidth, scaleHeight);
+
+        canvasWidth = Math.floor(canvasWidth * scale);
+        canvasHeight = Math.floor(canvasHeight * scale);
+      }
+
+      // Set canvas dimensions to match scaled image
+      bgCanvas.width = canvasWidth;
+      bgCanvas.height = canvasHeight;
+      drawCanvas.width = canvasWidth;
+      drawCanvas.height = canvasHeight;
+
+      // Clear and draw image
+      bgCtx.clearRect(0, 0, canvasWidth, canvasHeight);
+      bgCtx.drawImage(img, 0, 0, canvasWidth, canvasHeight);
+
+      // Redibujar los puntos después de cargar la imagen
+      requestAnimationFrame(redrawCanvas); // Usar requestAnimationFrame para mejor sincronización
+    },
+    [redrawCanvas],
+  );
 
   // Load and setup background image
   useEffect(() => {
@@ -179,9 +187,7 @@ export function DiagramCanvas({
 
     const loadImage = async () => {
       try {
-
         if (!selectedProperty) {
-
           return;
         }
 
@@ -191,7 +197,7 @@ export function DiagramCanvas({
         if (!url || !isCurrentLoad) return;
 
         const img = new Image();
-        img.crossOrigin = 'anonymous';
+        img.crossOrigin = "anonymous";
         img.onload = () => {
           if (!isCurrentLoad) return;
 
@@ -199,11 +205,11 @@ export function DiagramCanvas({
         };
         img.onerror = (error) => {
           if (!isCurrentLoad) return;
-          console.error('Error loading image:', error);
+          console.error("Error loading image:", error);
         };
         img.src = url;
       } catch (error) {
-        console.error('Error in loadImage:', error);
+        console.error("Error in loadImage:", error);
       }
     };
 
@@ -220,38 +226,47 @@ export function DiagramCanvas({
   }, [redrawCanvas, history, currentStep]);
 
   // Get canvas coordinates from mouse event
-  const getCanvasPoint = useCallback((e: React.MouseEvent<HTMLCanvasElement>): Point => {
-    const rect = canvasRef.current!.getBoundingClientRect();
-    return {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-      color: currentColor,
-      size: POINT_SIZE,
-      type: currentType
-    };
-  }, [currentColor, currentType]);
+  const getCanvasPoint = useCallback(
+    (e: React.MouseEvent<HTMLCanvasElement>): Point => {
+      const rect = canvasRef.current!.getBoundingClientRect();
+      return {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+        color: currentColor,
+        size: POINT_SIZE,
+        type: currentType,
+      };
+    },
+    [currentColor, currentType],
+  );
 
   // Handle mouse down event
-  const handleMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (isGuestView) return;
-    
-    setIsDrawing(true);
-    const point = getCanvasPoint(e);
-    setCurrentPath([point]);
-  }, [isGuestView, getCanvasPoint]);
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent<HTMLCanvasElement>) => {
+      if (isGuestView) return;
+
+      setIsDrawing(true);
+      const point = getCanvasPoint(e);
+      setCurrentPath([point]);
+    },
+    [isGuestView, getCanvasPoint],
+  );
 
   // Handle mouse move event
-  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDrawing || isGuestView) return;
-    
-    const point = getCanvasPoint(e);
-    setCurrentPath((prev: Point[]) => [...prev, point]);
-  }, [isDrawing, isGuestView, getCanvasPoint]);
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent<HTMLCanvasElement>) => {
+      if (!isDrawing || isGuestView) return;
+
+      const point = getCanvasPoint(e);
+      setCurrentPath((prev: Point[]) => [...prev, point]);
+    },
+    [isDrawing, isGuestView, getCanvasPoint],
+  );
 
   // Handle mouse up/leave events
   const handleDrawingEnd = useCallback(() => {
     if (!isDrawing) return;
-    
+
     setIsDrawing(false);
     if (currentPath.length > 0) {
       const newPoints = [...currentPointsRef.current, ...currentPath];
@@ -263,11 +278,15 @@ export function DiagramCanvas({
   return (
     <section className="space-y-4">
       <h2 className="text-xl font-semibold text-gray-700">Diagram</h2>
-      
+
       <div className="flex items-center gap-6 mb-4">
-        <span className="text-sm font-medium text-gray-700">Color reference:</span>
-        {COLOR_OPTIONS.filter((opt, index, self) => 
-          opt.color !== '#FFD700' || index === self.findIndex(o => o.color === '#FFD700')
+        <span className="text-sm font-medium text-gray-700">
+          Color reference:
+        </span>
+        {COLOR_OPTIONS.filter(
+          (opt, index, self) =>
+            opt.color !== "#FFD700" ||
+            index === self.findIndex((o) => o.color === "#FFD700"),
         ).map(({ color, label }) => (
           <div key={color} className="flex items-center gap-2">
             <div
@@ -285,22 +304,24 @@ export function DiagramCanvas({
             <div className="flex flex-col gap-2 mb-4">
               {COLOR_OPTIONS.map(({ color, label, type }) => (
                 <button
-                  key={`${color}-${type || 'normal'}`}
+                  key={`${color}-${type || "normal"}`}
                   type="button"
                   className={`w-6 h-6 rounded-full mx-auto transition-all flex items-center justify-center ${
-                    currentColor === color && currentType === type ? 'ring-2 ring-offset-2 ring-gray-500' : ''
+                    currentColor === color && currentType === type
+                      ? "ring-2 ring-offset-2 ring-gray-500"
+                      : ""
                   }`}
-                  style={{ backgroundColor: type ? 'transparent' : color }}
+                  style={{ backgroundColor: type ? "transparent" : color }}
                   onClick={() => {
                     setCurrentColor(color);
                     setCurrentType(type);
                   }}
-                  title={`${label}${type ? ` (${type})` : ''}`}
+                  title={`${label}${type ? ` (${type})` : ""}`}
                 >
-                  {type === 'x' && (
+                  {type === "x" && (
                     <span className="text-yellow-500 font-bold">×</span>
                   )}
-                  {type === 'check' && (
+                  {type === "check" && (
                     <span className="text-yellow-500 font-bold">✓</span>
                   )}
                 </button>
@@ -332,31 +353,30 @@ export function DiagramCanvas({
         <div className="relative max-w-[1200px] max-h-[700px] border border-gray-300 rounded-lg bg-white overflow-hidden mx-auto">
           {!selectedProperty ? (
             <div className="w-full h-[700px] flex flex-col items-center justify-center bg-gray-50">
-              <h2 className="text-2xl font-semibold text-gray-600 mb-2">No diagram is currently loaded</h2>
+              <h2 className="text-2xl font-semibold text-gray-600 mb-2">
+                No diagram is currently loaded
+              </h2>
               <p className="text-lg text-gray-500">Please select a property</p>
             </div>
           ) : (
             <div className="relative w-fit mx-auto">
-            <canvas
-              ref={backgroundCanvasRef}
-              className="block"
-            />
-            
-            <canvas
-              ref={canvasRef}
-              className={`absolute inset-0 ${
-                isGuestView ? 'cursor-not-allowed' : 'cursor-crosshair'
-              }`}
-              onMouseDown={handleMouseDown}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleDrawingEnd}
-              onMouseLeave={handleDrawingEnd}
-              style={{ 
-                pointerEvents: isGuestView ? 'none' : 'auto',
-                touchAction: 'none'
-              }}
-            />
-          </div>
+              <canvas ref={backgroundCanvasRef} className="block" />
+
+              <canvas
+                ref={canvasRef}
+                className={`absolute inset-0 ${
+                  isGuestView ? "cursor-not-allowed" : "cursor-crosshair"
+                }`}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleDrawingEnd}
+                onMouseLeave={handleDrawingEnd}
+                style={{
+                  pointerEvents: isGuestView ? "none" : "auto",
+                  touchAction: "none",
+                }}
+              />
+            </div>
           )}
         </div>
       </div>

@@ -1,21 +1,21 @@
 // Componente principal de la aplicación
-import { Routes, Route, useParams } from 'react-router-dom';
-import { GuestInformation } from './components/GuestInformation';
-import { PropertyInformation } from './components/PropertyInformation';
-import { DiagramCanvas } from './components/DiagramCanvas';
-import { SignatureSection } from './components/SignatureSection';
-import { LoadingSpinner } from './components/LoadingSpinner';
-import { ThankYou } from './components/ThankYou';
-import PersistentFormHandler from './components/PersistentFormHandler';
-import { useInspectionForm } from './hooks/useInspectionForm';
+import { Routes, Route, useParams } from "react-router-dom";
+import { GuestInformation } from "./components/GuestInformation";
+import { PropertyInformation } from "./components/PropertyInformation";
+import { DiagramCanvas } from "./components/DiagramCanvas";
+import { SignatureSection } from "./components/SignatureSection";
+import { LoadingSpinner } from "./components/LoadingSpinner";
+import { ThankYou } from "./components/ThankYou";
+import PersistentFormHandler from "./components/PersistentFormHandler";
+import { useInspectionForm } from "./hooks/useInspectionForm";
 // useStore ya se importa más abajo o más arriba, eliminando esta duplicación potencial
-import './styles/orientation-warning.css';
-import OrientationWarning from './components/OrientationWarning';
-import Login from './components/Login';
-import { useEffect } from 'react'; // useState y supabase ya no son necesarios aquí para auth
+import "./styles/orientation-warning.css";
+import OrientationWarning from "./components/OrientationWarning";
+import Login from "./components/Login";
+import { useEffect } from "react"; // useState y supabase ya no son necesarios aquí para auth
 // import { supabase } from './lib/supabase'; // Ya no se usa para la lógica de sesión aquí
-import { useStore } from './store/useStore'; // ESTA ES LA IMPORTACIÓN QUE DEBE QUEDAR
-import ProtectedRoute from './components/ProtectedRoute'; // Importar la ruta protegida
+import { useStore } from "./store/useStore"; // ESTA ES LA IMPORTACIÓN QUE DEBE QUEDAR
+import ProtectedRoute from "./components/ProtectedRoute"; // Importar la ruta protegida
 // Navigate se usará dentro de ProtectedRoute y posiblemente para rutas no encontradas
 
 // Placeholder para AdminDashboard - debes crear este componente
@@ -29,11 +29,10 @@ function InspectionForm() {
   const handleLogout = () => {
     zustandLogout();
     // La redirección a /login es manejada por ProtectedRoute al detectar que isAuthenticated es false
-    console.log('Logout solicitado. Estado de Zustand actualizado.');
+    console.log("Logout solicitado. Estado de Zustand actualizado.");
   };
 
-  const{
-
+  const {
     formData,
     isGuestView,
     isSending,
@@ -51,7 +50,7 @@ function InspectionForm() {
     handleUndo,
     handleClear,
     clearSignature,
-    handleSubmit
+    handleSubmit,
   } = useInspectionForm(id);
 
   if (isLoading) {
@@ -64,7 +63,7 @@ function InspectionForm() {
       <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
         {notification && (
           <div
-            className={`fixed top-4 right-4 p-4 rounded-lg shadow-lg ${notification.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
+            className={`fixed top-4 right-4 p-4 rounded-lg shadow-lg ${notification.type === "success" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}
             role="alert"
           >
             {notification.message}
@@ -73,7 +72,10 @@ function InspectionForm() {
         <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-lg p-8">
           {currentUser && !isGuestView && (
             <div className="flex justify-between items-center mb-4">
-              <p className="text-sm text-gray-600">Logged in as: <span className="font-semibold">{currentUser.userName}</span></p>
+              <p className="text-sm text-gray-600">
+                Logged in as:{" "}
+                <span className="font-semibold">{currentUser.userName}</span>
+              </p>
               <button
                 onClick={handleLogout}
                 className="px-4 py-2 bg-red-500 text-white text-sm rounded-md hover:bg-red-600"
@@ -116,31 +118,37 @@ function InspectionForm() {
                   onPointsChange={handlePointsChange}
                 />
               ) : (
-                <div className="text-center text-gray-500">Cargando diagrama...</div>
+                <div className="text-center text-gray-500">
+                  Cargando diagrama...
+                </div>
               )}
 
-            <SignatureSection
-              isGuestView={isGuestView}
-              observations={formData.observations}
-              onObservationsChange={handleInputChange}
-              signaturePadRef={signaturePadRef}
-              onClearSignature={clearSignature}
-            />
+              <SignatureSection
+                isGuestView={isGuestView}
+                observations={formData.observations}
+                onObservationsChange={handleInputChange}
+                signaturePadRef={signaturePadRef}
+                onClearSignature={clearSignature}
+              />
 
-            <div className="flex justify-end space-x-4">
-              <button
-                type="submit"
-                disabled={isSending}
-                className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isSending ? 'Processing...' : (isGuestView ? 'Sign and Download PDF' : 'Send to Guest')}
-              </button>
-            </div>
-          </form>
+              <div className="flex justify-end space-x-4">
+                <button
+                  type="submit"
+                  disabled={isSending}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSending
+                    ? "Processing..."
+                    : isGuestView
+                      ? "Sign and Download PDF"
+                      : "Send to Guest"}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
-    </div>
-  </> 
+    </>
   );
 }
 
@@ -150,31 +158,35 @@ function App() {
   useEffect(() => {
     // Inicializar el estado de autenticación desde localStorage al cargar la app
     useStore.getState().initializeAuth();
-    console.log('App.tsx: Zustand auth initialization requested.');
+    console.log("App.tsx: Zustand auth initialization requested.");
   }, []); // El array vacío asegura que se ejecute solo una vez al montar
 
   return (
     <>
       <OrientationWarning />
       <Routes>
-      <Route path="/login" element={<Login />} />
-      {/* Ruta pública para el formulario de inspección de invitados */}
-      <Route path="/inspection/form/:formLink" element={<PersistentFormHandler />} />
+        <Route path="/login" element={<Login />} />
+        {/* Ruta pública para el formulario de inspección de invitados */}
+        <Route
+          path="/inspection/form/:formLink"
+          element={<PersistentFormHandler />}
+        />
 
-      {/* Rutas Protegidas (solo para administradores autenticados) */}
-      {/* Ruta pública para la página de agradecimiento */}
-      <Route path="/thank-you" element={<ThankYou />} />
+        {/* Rutas Protegidas (solo para administradores autenticados) */}
+        {/* Ruta pública para la página de agradecimiento */}
+        <Route path="/thank-you" element={<ThankYou />} />
 
-      <Route element={<ProtectedRoute />}>
-        <Route path="/" element={<InspectionForm />} />
-        {/* Ruta original para compatibilidad con enlaces existentes (si son para admin) */}
-        <Route path="/inspection/:id" element={<InspectionForm />} /> 
-        <Route path="/admin" element={<AdminDashboard />} /> {/* Asegúrate de crear e importar AdminDashboard */}
-      </Route>
-      
-      {/* Ruta para 404 Not Found - debe ser la última */}
-      <Route path="*" element={<div>404 Not Found</div>} />
-    </Routes>
+        <Route element={<ProtectedRoute />}>
+          <Route path="/" element={<InspectionForm />} />
+          {/* Ruta original para compatibilidad con enlaces existentes (si son para admin) */}
+          <Route path="/inspection/:id" element={<InspectionForm />} />
+          <Route path="/admin" element={<AdminDashboard />} />{" "}
+          {/* Asegúrate de crear e importar AdminDashboard */}
+        </Route>
+
+        {/* Ruta para 404 Not Found - debe ser la última */}
+        <Route path="*" element={<div>404 Not Found</div>} />
+      </Routes>
     </>
   );
 }

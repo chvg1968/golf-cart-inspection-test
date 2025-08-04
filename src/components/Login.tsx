@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { supabase } from '../lib/supabase'; // supabase client para invocar la función
-import { useNavigate } from 'react-router-dom';
-import { useStore } from '../store/useStore'; // <--- IMPORTAR useStore
+import React, { useState } from "react";
+import { supabase } from "../lib/supabase"; // supabase client para invocar la función
+import { useNavigate } from "react-router-dom";
+import { useStore } from "../store/useStore"; // <--- IMPORTAR useStore
 
 // Idealmente, este tipo vendría de un archivo de tipos compartido
 interface AuthResponse {
@@ -14,37 +14,41 @@ interface AuthResponse {
 }
 
 const Login = () => {
-  const [userName, setUserName] = useState('');
-  const [password, setPassword] = useState('');
+  const [userName, setUserName] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const navigate = useNavigate();
   const zustandLoginAction = useStore((state) => state.login); // <--- OBTENER LA ACCIÓN LOGIN
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    setError("");
 
     try {
-      const { data, error: functionError } = await supabase.functions.invoke<AuthResponse>(
-        'autenticar-usuario', // Nombre de tu Edge Function
-        {
-          body: { userName, password },
-        }
-      );
+      const { data, error: functionError } =
+        await supabase.functions.invoke<AuthResponse>(
+          "autenticar-usuario", // Nombre de tu Edge Function
+          {
+            body: { userName, password },
+          },
+        );
 
       if (functionError) {
-        console.error('Error al invocar la función:', functionError);
+        console.error("Error al invocar la función:", functionError);
         // Intentar obtener un mensaje de error más específico si la función lo devuelve en data
-        const errMsg = (functionError as any).context?.data?.error || functionError.message || 'Error de autenticación.';
+        const errMsg =
+          (functionError as { context?: { data?: { error?: string } } }).context
+            ?.data?.error ||
+          functionError.message ||
+          "Error de autenticación.";
         setError(errMsg);
         throw new Error(errMsg);
       }
 
       if (data) {
         // Autenticación exitosa
-        
 
         try {
           // YA NO NECESITAS GUARDAR EN LOCALSTORAGE AQUÍ, ZUSTAND LO HARÁ
@@ -57,27 +61,29 @@ const Login = () => {
           zustandLoginAction(data.user, data.token); // <--- USAR LA ACCIÓN
 
           console.log("Login.tsx: Intentando redirigir a '/'...");
-          navigate('/');
+          navigate("/");
           console.log("Login.tsx: Redirección a '/' solicitada.");
-
         } catch (storeOrNavError) {
-          console.error("Login.tsx: Error durante la actualización del store o la navegación:", storeOrNavError);
+          console.error(
+            "Login.tsx: Error durante la actualización del store o la navegación:",
+            storeOrNavError,
+          );
           setError("Error al procesar el login localmente.");
         }
-         
       } else {
-        console.error('Login.tsx: Token o usuario no recibido en la respuesta, aunque no hubo functionError.');
+        console.error(
+          "Login.tsx: Token o usuario no recibido en la respuesta, aunque no hubo functionError.",
+        );
         // Esto no debería ocurrir si functionError no se disparó, pero por si acaso
-        setError('Respuesta inesperada del servidor.');
+        setError("Respuesta inesperada del servidor.");
       }
-
     } catch (err: unknown) {
       // El error ya debería estar seteado por el bloque 'if (functionError)'
       // pero por si acaso hay otro tipo de error.
       if (!error && err instanceof Error) {
         setError(err.message);
       } else if (!error) {
-        setError('Un error inesperado ocurrió durante el login.');
+        setError("Un error inesperado ocurrió durante el login.");
       }
     } finally {
       setLoading(false);
@@ -87,11 +93,16 @@ const Login = () => {
   return (
     <div className="flex justify-center items-center h-screen">
       <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-md">
-        <h2 className="text-2xl font-semibold text-gray-800 text-center">Golf Cart Inspection Login</h2>
+        <h2 className="text-2xl font-semibold text-gray-800 text-center">
+          Golf Cart Inspection Login
+        </h2>
         {error && <div className="text-red-500 text-sm mt-2">{error}</div>}
         <form onSubmit={handleLogin} className="mt-4">
           <div className="mb-4">
-            <label htmlFor="userName" className="block text-gray-700 text-sm font-bold mb-2">
+            <label
+              htmlFor="userName"
+              className="block text-gray-700 text-sm font-bold mb-2"
+            >
               Username:
             </label>
             <input
@@ -105,7 +116,10 @@ const Login = () => {
             />
           </div>
           <div className="mb-6">
-            <label htmlFor="password" className="block text-gray-700 text-sm font-bold mb-2">
+            <label
+              htmlFor="password"
+              className="block text-gray-700 text-sm font-bold mb-2"
+            >
               Password:
             </label>
             <input
@@ -124,7 +138,7 @@ const Login = () => {
               type="submit"
               disabled={loading}
             >
-              {loading ? 'Logging in...' : 'Login'}
+              {loading ? "Logging in..." : "Login"}
             </button>
           </div>
         </form>

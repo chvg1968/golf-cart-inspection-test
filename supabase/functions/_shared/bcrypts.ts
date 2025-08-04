@@ -101,7 +101,7 @@
     // Decode base64 data
     function decode_base64(s, maxolen) {
         let off = 0, slen = s.length, olen = 0;
-        let rs = [];
+        const rs = [];
         let c1, c2, c3, c4, o, code;
 
         if (!BASE64_REGEX.test(s)) {
@@ -238,8 +238,8 @@
     function crypt_raw(data, salt, rounds) {
         let i, j, koff, lr = [0, 0];
         const clen = CIPHERTEXT_LEN;
-        let cdata = "OrpheanBeholderScryDoubt".split('').map(c => c.charCodeAt(0)); //"OrpheanBeholderScryDoubt"
-        let datalen = data.length;
+        const cdata = "OrpheanBeholderScryDoubt".split('').map(c => c.charCodeAt(0)); //"OrpheanBeholderScryDoubt"
+        const datalen = data.length;
 
         if (datalen > 72) {
             throw new Error("Password too long");
@@ -260,7 +260,7 @@
             cdata[i * 2 + 1] = lr[1];
         }
 
-        let ret = [];
+        const ret = [];
         for (i = 0; i < clen; i++) {
             ret.push(String.fromCharCode(cdata[i]));
         }
@@ -328,24 +328,24 @@
             throw new Error("Invalid salt format");
         }
 
-        let version = salt.substring(1,3);
+        const version = salt.substring(1,3);
         if (version !== "2a" && version !== "2b" && version !== "2y") { // Allow common versions
             throw new Error("Invalid salt version");
         }
 
-        let rounds = parseInt(salt.substring(4, 6));
+        const rounds = parseInt(salt.substring(4, 6));
         if (isNaN(rounds) || rounds < MIN_ROUNDS || rounds > MAX_ROUNDS) {
             throw new Error("Invalid number of rounds in salt");
         }
         
         // Decode salt (last 22 characters)
-        let real_salt_b64 = salt.substring(salt.lastIndexOf('$') + 1);
-        let real_salt = decode_base64(real_salt_b64, SALT_LEN);
+        const real_salt_b64 = salt.substring(salt.lastIndexOf('$') + 1);
+        const real_salt = decode_base64(real_salt_b64, SALT_LEN);
         if (real_salt.length < SALT_LEN) { // Ensure it decoded to the full length
              throw Error("Salt decoding failed: expected "+SALT_LEN+" bytes, got "+real_salt.length);
         }
 
-        let hashed = crypt_raw(s, real_salt, rounds);
+        const hashed = crypt_raw(s, real_salt, rounds);
         let res = "$2a$"; // Store with a common prefix
         if (rounds < 10) res += "0";
         res += rounds.toString() + "$";
@@ -367,11 +367,11 @@
         if (hash.length < 29) { // Basic check for a valid hash structure
             return false; // Not a valid hash
         }
-        let salt = hash.substring(0, hash.lastIndexOf('$') + BCRYPT_SALT_LEN + 1 -SALT_LEN); // Extract the full salt part e.g. $2a$10$abcdefghijklmnopqrstu
+        const salt = hash.substring(0, hash.lastIndexOf('$') + BCRYPT_SALT_LEN + 1 -SALT_LEN); // Extract the full salt part e.g. $2a$10$abcdefghijklmnopqrstu
         if (salt.length !== 29 || salt.charAt(0) !== '$' || salt.charAt(3) !== '$' || salt.charAt(6) !== '$') {
             return false; // Invalid salt format within hash
         }
-        let hnew = hashSync(s, salt);
+        const hnew = hashSync(s, salt);
         if (hnew.length !== hash.length) return false;
         // Constant time comparison to prevent timing attacks
         let diff = 0;

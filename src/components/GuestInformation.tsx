@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 interface GuestInformationProps {
   formData: {
@@ -11,13 +11,19 @@ interface GuestInformationProps {
   onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-export function GuestInformation({ formData, isGuestView, onInputChange }: GuestInformationProps) {
+export function GuestInformation({
+  formData,
+  isGuestView,
+  onInputChange,
+}: GuestInformationProps) {
   return (
     <section className="space-y-4">
       <h2 className="text-xl font-semibold text-gray-700">Guest Information</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700">Guest Name</label>
+          <label className="block text-sm font-medium text-gray-700">
+            Guest Name
+          </label>
           <input
             type="text"
             name="guestName"
@@ -30,7 +36,9 @@ export function GuestInformation({ formData, isGuestView, onInputChange }: Guest
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700">Phone</label>
+          <label className="block text-sm font-medium text-gray-700">
+            Phone
+          </label>
           <input
             type="tel"
             name="guestPhone"
@@ -43,7 +51,9 @@ export function GuestInformation({ formData, isGuestView, onInputChange }: Guest
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700">Email</label>
+          <label className="block text-sm font-medium text-gray-700">
+            Email
+          </label>
           <input
             type="email"
             name="guestEmail"
@@ -56,7 +66,9 @@ export function GuestInformation({ formData, isGuestView, onInputChange }: Guest
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700">Inspection Date</label>
+          <label className="block text-sm font-medium text-gray-700">
+            Inspection Date
+          </label>
           <input
             type="date"
             title="Inspection Date"

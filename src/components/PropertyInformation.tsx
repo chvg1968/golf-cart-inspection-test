@@ -1,5 +1,5 @@
-import React from 'react';
-import { PROPERTIES } from '../types';
+import React from "react";
+import { PROPERTIES } from "../types";
 
 interface PropertyInformationProps {
   formData: {
@@ -11,18 +11,29 @@ interface PropertyInformationProps {
   onPropertyChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
 }
 
-export function PropertyInformation({ formData, isGuestView, onPropertyChange }: PropertyInformationProps) {
+export function PropertyInformation({
+  formData,
+  isGuestView,
+  onPropertyChange,
+}: PropertyInformationProps) {
   return (
     <section className="space-y-4">
-      <h2 className="text-xl font-semibold text-gray-700">Property Information</h2>
+      <h2 className="text-xl font-semibold text-gray-700">
+        Property Information
+      </h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700">Property</label>
+          <label className="block text-sm font-medium text-gray-700">
+            Property
+          </label>
           {isGuestView ? (
             <input
               type="text"
               name="property"
-              value={PROPERTIES.find(p => p.id === formData.property)?.name || 'Not selected'}
+              value={
+                PROPERTIES.find((p) => p.id === formData.property)?.name ||
+                "Not selected"
+              }
               readOnly
               aria-label="Property"
               title="Property"
@@ -39,7 +50,7 @@ export function PropertyInformation({ formData, isGuestView, onPropertyChange }:
               required
             >
               <option value="">Select property</option>
-              {PROPERTIES.map(property => (
+              {PROPERTIES.map((property) => (
                 <option key={property.id} value={property.id}>
                   {property.name}
                 </option>
@@ -48,11 +59,13 @@ export function PropertyInformation({ formData, isGuestView, onPropertyChange }:
           )}
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700">Cart Type</label>
+          <label className="block text-sm font-medium text-gray-700">
+            Cart Type
+          </label>
           <input
             type="text"
             name="cartType"
-            value={formData.cartType || 'Not selected'}
+            value={formData.cartType || "Not selected"}
             readOnly
             aria-label="Cart Type"
             title="Cart Type"
@@ -60,7 +73,9 @@ export function PropertyInformation({ formData, isGuestView, onPropertyChange }:
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700">Cart Number</label>
+          <label className="block text-sm font-medium text-gray-700">
+            Cart Number
+          </label>
           <input
             type="text"
             name="cartNumber"

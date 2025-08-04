@@ -1,13 +1,16 @@
-import { useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import SignaturePad from 'react-signature-canvas';
-import { Point } from '../types';
-import { supabase, getDiagramMarks, uploadPDF } from '../lib/supabase';
-import { sendFormEmail } from '../lib/email';
-import { sendToAirtable, updateAirtablePdfLink } from '../components/AirtableService';
-import { generateFormPDF } from '../components/PDFGenerator';
-import { useStore } from '../store/useStore';
-import { PROPERTIES } from '../types';
+import { useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import SignaturePad from "react-signature-canvas";
+import { Point } from "../types";
+import { supabase, getDiagramMarks, uploadPDF } from "../lib/supabase";
+import { sendFormEmail } from "../lib/email";
+import {
+  sendToAirtable,
+  updateAirtablePdfLink,
+} from "../components/AirtableService";
+import { generateFormPDF } from "../components/PDFGenerator";
+import { useStore } from "../store/useStore";
+import { PROPERTIES } from "../types";
 
 export function useInspectionForm(id?: string) {
   const navigate = useNavigate();
@@ -33,7 +36,7 @@ export function useInspectionForm(id?: string) {
     setNotification,
     handleUndo,
     handleClear,
-    handlePointsChange
+    handlePointsChange,
   } = useStore();
 
   const signaturePadRef = useRef<SignaturePad>(null);
@@ -44,8 +47,8 @@ export function useInspectionForm(id?: string) {
   // Cargar marcas cuando se selecciona una propiedad
   useEffect(() => {
     if (selectedProperty && !isGuestView && !id) {
-      loadDiagramMarks(selectedProperty.diagramType).catch(error => {
-        console.error('Error loading default diagram marks:', error);
+      loadDiagramMarks(selectedProperty.diagramType).catch((error) => {
+        console.error("Error loading default diagram marks:", error);
       });
     }
   }, [selectedProperty, isGuestView, id]);
@@ -66,9 +69,9 @@ export function useInspectionForm(id?: string) {
 
     try {
       const { data: inspection, error } = await supabase
-        .from('inspections')
-        .select('*')
-        .eq('id', inspectionId)
+        .from("inspections")
+        .select("*")
+        .eq("id", inspectionId)
         .single();
 
       if (error) throw error;
@@ -82,10 +85,10 @@ export function useInspectionForm(id?: string) {
           property: inspection.property,
           cartType: inspection.cart_type,
           cartNumber: inspection.cart_number,
-          observations: inspection.observations || '',
+          observations: inspection.observations || "",
         });
 
-        const property = PROPERTIES.find(p => p.id === inspection.property);
+        const property = PROPERTIES.find((p) => p.id === inspection.property);
         if (property) {
           setSelectedProperty(property);
         }
@@ -93,8 +96,15 @@ export function useInspectionForm(id?: string) {
         if (inspection.diagram_data) {
           const diagramData = inspection.diagram_data as { points: Point[] };
           if (diagramData.points && diagramData.points.length > 0) {
-            const uniquePoints = diagramData.points.filter((point, index, self) =>
-              index === self.findIndex(p => p.x === point.x && p.y === point.y && p.color === point.color)
+            const uniquePoints = diagramData.points.filter(
+              (point, index, self) =>
+                index ===
+                self.findIndex(
+                  (p) =>
+                    p.x === point.x &&
+                    p.y === point.y &&
+                    p.color === point.color,
+                ),
             );
 
             setDiagramPoints(uniquePoints);
@@ -103,22 +113,22 @@ export function useInspectionForm(id?: string) {
                 const lastStep = history[history.length - 1] || [];
                 return [...history, [...lastStep, point]];
               },
-              [[]]
+              [[]],
             );
             setDiagramHistory(newHistory);
             setCurrentStep(newHistory.length - 1);
           }
         }
 
-        if (inspection.status === 'completed') {
-          navigate('/thank-you');
+        if (inspection.status === "completed") {
+          navigate("/thank-you");
           return;
         }
       }
     } catch (error) {
-      console.error('Error loading inspection:', error);
-      alert('Error loading inspection. Please try again.');
-      navigate('/');
+      console.error("Error loading inspection:", error);
+      alert("Error loading inspection. Please try again.");
+      navigate("/");
     } finally {
       setIsLoading(false);
       loadingRef.current = false;
@@ -135,29 +145,35 @@ export function useInspectionForm(id?: string) {
             const lastStep = history[history.length - 1] || [];
             return [...history, [...lastStep, point]];
           },
-          [[]]
+          [[]],
         );
         setDiagramHistory(newHistory);
         setCurrentStep(newHistory.length - 1);
       }
     } catch (error) {
-      console.error('Error loading diagram marks:', error);
+      console.error("Error loading diagram marks:", error);
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
+  ) => {
     const { name, value } = e.target;
     setFormData({ [name]: value });
   };
 
-  const handlePropertyChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const property = PROPERTIES.find(p => p.id === e.target.value);
+  const handlePropertyChange = async (
+    e: React.ChangeEvent<HTMLSelectElement>,
+  ) => {
+    const property = PROPERTIES.find((p) => p.id === e.target.value);
     if (property) {
       setSelectedProperty(property);
       setFormData({
         property: property.id,
         cartType: property.cartType,
-        cartNumber: property.cartNumber
+        cartNumber: property.cartNumber,
       });
       setDiagramPoints([]);
       setDiagramHistory([[]]);
@@ -180,39 +196,44 @@ export function useInspectionForm(id?: string) {
     try {
       // Validar firma en vista de invitado
       if (isGuestView && !signaturePadRef.current?.toData()?.length) {
-        alert('Please sign the form before submitting.');
+        alert("Please sign the form before submitting.");
         return;
       }
 
       // Generar PDF
       const pdfData = await generateFormPDF({
         contentRef: formContentRef,
-        waitForComplete: true
+        waitForComplete: true,
       });
 
       if (!pdfData) {
-        throw new Error('Failed to generate PDF');
+        throw new Error("Failed to generate PDF");
       }
 
       // Subir PDF a Supabase
       const pdfBlob = pdfData.download.blob;
       if (!pdfBlob || pdfBlob.size === 0) {
-        throw new Error('PDF blob is empty or invalid');
+        throw new Error("PDF blob is empty or invalid");
       }
 
       // Generar nombre de archivo seguro reemplazando caracteres especiales
-      const safeProperty = formData.property.toLowerCase().replace(/[^a-z0-9]/g, '_');
-      const safeGuestName = formData.guestName.toLowerCase().replace(/[^a-z0-9]/g, '_');
-      const safeDate = new Date().toISOString()
-        .replace(/[:.]/g, '_')  // Reemplazar : y .
-        .replace(/[TZ]/g, '_')   // Reemplazar T y Z
-        .replace(/\+\d{4}/, ''); // Eliminar offset de zona horaria
-      
+      const safeProperty = formData.property
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "_");
+      const safeGuestName = formData.guestName
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "_");
+      const safeDate = new Date()
+        .toISOString()
+        .replace(/[:.]/g, "_") // Reemplazar : y .
+        .replace(/[TZ]/g, "_") // Reemplazar T y Z
+        .replace(/\+\d{4}/, ""); // Eliminar offset de zona horaria
+
       const pdfFilename = `${safeProperty}_${safeGuestName}_${safeDate}.pdf`;
       const pdfUrl = await uploadPDF(pdfBlob, pdfFilename);
 
       if (!pdfUrl) {
-        throw new Error('Failed to upload PDF');
+        throw new Error("Failed to upload PDF");
       }
 
       if (!isGuestView) {
@@ -221,8 +242,8 @@ export function useInspectionForm(id?: string) {
         await handleExistingInspection(pdfUrl);
       }
     } catch (error) {
-      console.error('Error submitting form:', error);
-      alert('Error submitting form. Please try again.');
+      console.error("Error submitting form:", error);
+      alert("Error submitting form. Please try again.");
     } finally {
       setIsSending(false);
     }
@@ -231,7 +252,7 @@ export function useInspectionForm(id?: string) {
   const handleNewInspection = async (pdfUrl: string) => {
     // Crear nueva inspección
     const { data: newInspection, error: createError } = await supabase
-      .from('inspections')
+      .from("inspections")
       .insert([
         {
           guest_name: formData.guestName,
@@ -241,14 +262,16 @@ export function useInspectionForm(id?: string) {
           property: formData.property,
           cart_type: formData.cartType,
           cart_number: formData.cartNumber,
-          diagram_data: selectedProperty ? {
-            points: diagramPoints,
-            width: 600,
-            height: 400,
-            diagramType: selectedProperty.diagramType
-          } : null,
-          status: 'pending'
-        }
+          diagram_data: selectedProperty
+            ? {
+                points: diagramPoints,
+                width: 600,
+                height: 400,
+                diagramType: selectedProperty.diagramType,
+              }
+            : null,
+          status: "pending",
+        },
       ])
       .select()
       .single();
@@ -258,11 +281,11 @@ export function useInspectionForm(id?: string) {
     // Generar form_id y form_link
     // formIdSlug se usa para la columna form_id, su propósito actual podría necesitar revisión,
     // pero lo dejamos para no romper otra lógica.
-    const formIdSlug = `${formData.guestName.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`;
-    
+    const formIdSlug = `${formData.guestName.toLowerCase().replace(/\s+/g, "-")}-${Date.now()}`;
+
     // Usaremos el ID de la inspección (UUID de Supabase) como el identificador único para el acceso del invitado.
-    const guestAccessId = newInspection.id; 
-    
+    const guestAccessId = newInspection.id;
+
     // Este es el enlace correcto y público que se debe enviar en el correo electrónico.
     const emailLink = `${window.location.origin}/inspection/form/${guestAccessId}`;
 
@@ -270,77 +293,83 @@ export function useInspectionForm(id?: string) {
     // Guardamos solo el 'guestAccessId' en la columna 'form_link'.
     // La columna 'form_id' conserva el slug generado, para no interferir con otra posible lógica.
     await supabase
-      .from('inspections')
+      .from("inspections")
       .update({
         form_id: formIdSlug, // Columna form_id (slug)
-        form_link: guestAccessId // Columna form_link (el ID único para la URL del invitado)
+        form_link: guestAccessId, // Columna form_link (el ID único para la URL del invitado)
       })
-      .eq('id', newInspection.id);
+      .eq("id", newInspection.id);
 
     // Enviar a Airtable (Esta parte se mantiene igual)
-    const airtableRecordId = await sendToAirtable({
-      guestName: formData.guestName,
-      inspectionDate: formData.inspectionDate,
-      property: formData.property,
-      inspectionStatus: 'Pending'
-    }, pdfUrl);
+    const airtableRecordId = await sendToAirtable(
+      {
+        guestName: formData.guestName,
+        inspectionDate: formData.inspectionDate,
+        property: formData.property,
+        inspectionStatus: "Pending",
+      },
+      pdfUrl,
+    );
 
     if (airtableRecordId) {
       await supabase
-        .from('inspections')
+        .from("inspections")
         .update({ airtable_record_id: airtableRecordId }) // Esta actualización podría combinarse con la anterior
-        .eq('id', newInspection.id);                     // si se hacen al mismo registro
+        .eq("id", newInspection.id); // si se hacen al mismo registro
     }
 
     // Enviar email al invitado con el enlace público correcto.
-    await sendFormEmail('guest-form', {
+    await sendFormEmail("guest-form", {
       to_email: formData.guestEmail,
       to_name: formData.guestName,
-      from_name: 'Golf Cart Inspection System', // Considera usar una variable de entorno para esto
-      from_email:import.meta.env.VITE_SENDER_EMAIL, // Actualizado para usar SENDER_EMAIL de .env
+      from_name: "Golf Cart Inspection System", // Considera usar una variable de entorno para esto
+      from_email: import.meta.env.VITE_SENDER_EMAIL, // Actualizado para usar SENDER_EMAIL de .env
       property: formData.property,
       cart_type: formData.cartType,
       cart_number: formData.cartNumber,
       inspection_date: formData.inspectionDate,
       form_link: emailLink, // <--- Aquí va el enlace correcto para el email
       pdf_attachment: pdfUrl, // Asumo que pdfUrl es el PDF del admin, no el que firma el invitado aún
-      diagram_points: diagramPoints // Considera si esto debe ir en el primer correo al invitado
+      diagram_points: diagramPoints, // Considera si esto debe ir en el primer correo al invitado
     });
 
-    setNotification({ type: 'success', message: '¡Enlace enviado exitosamente al huésped!' });
+    setNotification({
+      type: "success",
+      message: "¡Enlace enviado exitosamente al huésped!",
+    });
     resetFormData();
-    navigate('/thank-you');
+    navigate("/thank-you");
   };
 
   const handleExistingInspection = async (pdfUrl: string) => {
     if (!id) {
-      throw new Error('ID de inspección no proporcionado');
+      throw new Error("ID de inspección no proporcionado");
     }
 
     // Actualizar la inspección
     const { error: updateError } = await supabase
-      .from('inspections')
+      .from("inspections")
       .update({
         observations: formData.observations,
         signature_data: signaturePadRef.current?.toDataURL(),
-        status: 'completed',
+        status: "completed",
         completed_at: new Date().toISOString(),
         diagram_data: {
           points: diagramPoints,
           width: 600,
           height: 400,
-          diagramType: selectedProperty?.diagramType
-        }
+          diagramType: selectedProperty?.diagramType,
+        },
       })
-      .eq('id', id);
+      .eq("id", id);
 
     if (updateError) throw updateError;
 
     // Obtener datos de la inspección
     const { data: inspectionData } = await supabase
-      .from('inspections')
-      .select('airtable_record_id')
-      .eq('id', id)
+      .from("inspections")
+      .select("airtable_record_id")
+      .eq("id", id)
       .single();
 
     // Actualizar Airtable
@@ -348,15 +377,15 @@ export function useInspectionForm(id?: string) {
       try {
         await updateAirtablePdfLink(inspectionData.airtable_record_id, pdfUrl);
       } catch (error) {
-        console.error('Error actualizando PDF en Airtable:', error);
+        console.error("Error actualizando PDF en Airtable:", error);
       }
     }
 
     // Enviar correo de confirmación al huésped
-    await sendFormEmail('completed-form', {
+    await sendFormEmail("completed-form", {
       to_email: formData.guestEmail,
       to_name: formData.guestName,
-      from_name: 'Golf Cart Inspection System',
+      from_name: "Golf Cart Inspection System",
       from_email: import.meta.env.VITE_SENDER_EMAIL,
       property: formData.property,
       cart_type: formData.cartType,
@@ -364,15 +393,15 @@ export function useInspectionForm(id?: string) {
       inspection_date: formData.inspectionDate,
       observations: formData.observations,
       form_id: id,
-      isAdmin: false // Importante: esto debe ser false para que el huésped reciba la confirmación
+      isAdmin: false, // Importante: esto debe ser false para que el huésped reciba la confirmación
     });
 
     // Enviar notificación a los administradores
     // El servicio de correo se encargará de enviar a todos los administradores configurados
-    await sendFormEmail('completed-form', {
+    await sendFormEmail("completed-form", {
       to_email: formData.guestEmail, // Este valor será sobrescrito por el servicio
       to_name: formData.guestName,
-      from_name: 'Golf Cart Inspection System',
+      from_name: "Golf Cart Inspection System",
       from_email: import.meta.env.VITE_SENDER_EMAIL,
       property: formData.property,
       cart_type: formData.cartType,
@@ -382,10 +411,10 @@ export function useInspectionForm(id?: string) {
       formId: id,
       pdf_attachment: pdfUrl,
       isAdmin: true,
-      skipAdminAlert: true
+      skipAdminAlert: true,
     });
 
-    navigate('/thank-you');
+    navigate("/thank-you");
   };
 
   return {
@@ -406,6 +435,6 @@ export function useInspectionForm(id?: string) {
     handleUndo,
     handleClear,
     clearSignature,
-    handleSubmit
+    handleSubmit,
   };
-} 
+}

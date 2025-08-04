@@ -1,7 +1,7 @@
-import React, { useEffect, useRef } from 'react';
-import SignaturePad from 'react-signature-canvas';
-import { Eraser } from 'lucide-react';
-import { PassiveSignaturePad } from './PassiveSignaturePad';
+import React, { useEffect, useRef } from "react";
+import SignaturePad from "react-signature-canvas";
+import { Eraser } from "lucide-react";
+import { PassiveSignaturePad } from "./PassiveSignaturePad";
 
 interface SignatureSectionProps {
   isGuestView: boolean;
@@ -22,8 +22,6 @@ export function SignatureSection({
   signaturePadRef,
   onClearSignature,
   onSignatureChange,
-  onTermsChange,
-  termsAccepted
 }: SignatureSectionProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -39,23 +37,25 @@ export function SignatureSection({
       }
     };
 
-    window.addEventListener('resize', resizeCanvas);
+    window.addEventListener("resize", resizeCanvas);
     resizeCanvas();
 
     return () => {
-      window.removeEventListener('resize', resizeCanvas);
+      window.removeEventListener("resize", resizeCanvas);
     };
   }, [signaturePadRef]);
 
   return (
     <section className="space-y-4 max-w-2xl mx-auto">
-      <h2 className="text-xl font-semibold text-gray-700">Terms and Signature</h2>
-      
+      <h2 className="text-xl font-semibold text-gray-700">
+        Terms and Signature
+      </h2>
+
       <div className="space-y-6">
         {/* Observations - Always enabled */}
         <div>
           <label className="block text-sm font-medium text-gray-700">
-            {isGuestView ? 'Observations' : 'Notes for the Guest'}
+            {isGuestView ? "Observations" : "Notes for the Guest"}
           </label>
           <textarea
             name="observations"
@@ -63,16 +63,21 @@ export function SignatureSection({
             onChange={onObservationsChange}
             rows={4}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-            placeholder={isGuestView ? 'Enter any observations about the cart condition...' : 'Add any notes for the guest...'}
+            placeholder={
+              isGuestView
+                ? "Enter any observations about the cart condition..."
+                : "Add any notes for the guest..."
+            }
           />
         </div>
 
         {/* Terms */}
         <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
           <p className="text-sm text-gray-600">
-            I hereby certify that the golf cart described above was granted to me on the date mentioned, 
-            and I acknowledge the stated damages. Any additional damages not listed are new and are 
-            considered my responsibility.
+            I hereby certify that the golf cart described above was granted to
+            me on the date mentioned, and I acknowledge the stated damages. Any
+            additional damages not listed are new and are considered my
+            responsibility.
           </p>
         </div>
 
@@ -85,17 +90,17 @@ export function SignatureSection({
             <PassiveSignaturePad
               signaturePadRef={signaturePadRef}
               canvasProps={{
-                className: 'signature-canvas w-full rounded-lg',
+                className: "signature-canvas w-full rounded-lg",
                 style: {
-                  width: '100%',
-                  height: '150px',
-                  maxWidth: '100%',
-                  minHeight: '150px',
-                  backgroundColor: 'white',
-                  cursor: 'crosshair'
+                  width: "100%",
+                  height: "150px",
+                  maxWidth: "100%",
+                  minHeight: "150px",
+                  backgroundColor: "white",
+                  cursor: "crosshair",
                 },
                 // Usar onChange para capturar cambios en la firma
-                onChange: () => onSignatureChange && onSignatureChange()
+                onChange: () => onSignatureChange && onSignatureChange(),
               }}
             />
           </div>

@@ -1,44 +1,50 @@
-import { supabase } from './supabase';
-import { Point } from '../types';
+import { supabase } from "./supabase";
+import { Point } from "../types";
 
 // Cache para almacenar los puntos por diagrama
 const pointsCache = new Map<string, Point[]>();
 
-export async function saveDiagramMarks(diagramId: string, points: Point[]): Promise<string | null> {
+export async function saveDiagramMarks(
+  diagramId: string,
+  points: Point[],
+): Promise<string | null> {
   try {
-
+    console.log("Saving diagram marks:", {
       diagramId,
-      pointsCount: points.length
+      pointsCount: points.length,
     });
 
     // Validar y normalizar los puntos antes de guardar
-    const normalizedPoints = points.map(point => ({
+    const normalizedPoints = points.map((point) => ({
       x: Number(point.x),
       y: Number(point.y),
       color: String(point.color),
-      size: typeof point.size === 'number' ? point.size : 8
+      size: typeof point.size === "number" ? point.size : 8,
     }));
 
-
+    console.log("Normalized points:", {
       sample: normalizedPoints.slice(0, 2),
-      total: normalizedPoints.length
+      total: normalizedPoints.length,
     });
 
     // Buscar si existe un registro para este diagrama
     const { data: existingData, error: selectError } = await supabase
-      .from('diagram_marks')
-      .select('id')
-      .eq('diagram_id', diagramId)
+      .from("diagram_marks")
+      .select("id")
+      .eq("diagram_id", diagramId)
       .maybeSingle();
 
     if (selectError) {
-      console.error('[saveDiagramMarks] Error checking existing record:', selectError);
+      console.error(
+        "[saveDiagramMarks] Error checking existing record:",
+        selectError,
+      );
       return null;
     }
 
-
+    console.log("Existing record status:", {
       exists: !!existingData,
-      id: existingData?.id
+      id: existingData?.id,
     });
 
     // Preparar los datos para la operación
@@ -47,30 +53,36 @@ export async function saveDiagramMarks(diagramId: string, points: Point[]): Prom
       diagram_id: diagramId,
       points: normalizedPoints,
       updated_at: now,
-      ...(existingData?.id ? {} : { created_at: now })
+      ...(existingData?.id ? {} : { created_at: now }),
     };
 
     // Realizar upsert usando el id como clave
     const { data: upserted, error } = await supabase
-      .from('diagram_marks')
+      .from("diagram_marks")
       .upsert({
         id: existingData?.id,
-        ...data
+        ...data,
       })
-      .select('id')
+      .select("id")
       .maybeSingle();
 
     if (error) {
-      console.error('[saveDiagramMarks] Error in upsert operation:', error);
-      return;
+      console.error("[saveDiagramMarks] Error in upsert operation:", error);
+      return null;
     }
 
     // Actualizar el caché después de guardar
     pointsCache.set(diagramId, normalizedPoints);
 
+    console.log("Successfully saved diagram marks:", {
+      id: upserted?.id,
+      pointsCount: normalizedPoints.length,
+    });
 
+    return upserted?.id || null;
   } catch (error) {
-    console.error('[saveDiagramMarks] Unexpected error:', error);
+    console.error("[saveDiagramMarks] Unexpected error:", error);
+    return null;
   }
 }
 
@@ -82,46 +94,47 @@ export async function getDiagramMarks(diagramId: string): Promise<Point[]> {
       return cached;
     }
 
-
+    console.log("Loading diagram marks from database:", { diagramId });
 
     const { data, error } = await supabase
-      .from('diagram_marks')
-      .select('points')
-      .eq('diagram_id', diagramId)
-      .order('created_at', { ascending: false })
+      .from("diagram_marks")
+      .select("points")
+      .eq("diagram_id", diagramId)
+      .order("created_at", { ascending: false })
       .maybeSingle();
 
     if (error) {
-      console.error('[getDiagramMarks] Database error:', error);
+      console.error("[getDiagramMarks] Database error:", error);
       return [];
     }
 
-
-
-    // Asegurarse de que los puntos son un array válido
+    console.log("Raw data from database:", {
+      hasData: !!data,
+      hasPoints: !!data?.points,
+    });
     if (data?.points && Array.isArray(data.points)) {
-      const normalizedPoints = data.points.map(point => ({
+      const normalizedPoints = data.points.map((point) => ({
         x: Number(point.x),
         y: Number(point.y),
         color: String(point.color),
-        size: typeof point.size === 'number' ? point.size : 8
+        size: typeof point.size === "number" ? point.size : 8,
       }));
 
       // Actualizar el caché
       pointsCache.set(diagramId, normalizedPoints);
 
-
+      console.log("Successfully loaded diagram marks:", {
         count: normalizedPoints.length,
-        sample: normalizedPoints.slice(0, 2)
+        sample: normalizedPoints.slice(0, 2),
       });
 
       return normalizedPoints;
     }
 
-
+    console.log("No diagram marks found for:", { diagramId });
     return [];
   } catch (error) {
-    console.error('[getDiagramMarks] Unexpected error:', error);
+    console.error("[getDiagramMarks] Unexpected error:", error);
     return [];
   }
 }

@@ -73,5 +73,5 @@ export interface EmailContentParams {
   cc?: string | string[];
   bcc?: string | string[];
   // Metadatos para uso interno
-  type?: 'guest-form' | 'completed-form' | 'admin-alert';
+  type?: "guest-form" | "completed-form" | "admin-alert";
 }

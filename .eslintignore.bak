@@ -1,0 +1,27 @@
+# Build outputs
+dist/
+build/
+
+# Dependencies
+node_modules/
+
+# History files (VS Code extension)
+.history/
+
+# Configuration files
+*.config.js
+*.config.ts
+vite.config.ts
+tailwind.config.js
+postcss.config.js
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# Generated files
+*.d.ts
+
+# Supabase generated
+supabase/functions/_shared/

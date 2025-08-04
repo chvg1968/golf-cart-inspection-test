@@ -1,5 +1,5 @@
-import { FC, useEffect, useRef } from 'react';
-import SignaturePad from 'react-signature-canvas';
+import { FC, useEffect, useRef } from "react";
+import SignaturePad from "react-signature-canvas";
 
 interface PassiveSignaturePadProps {
   canvasProps: React.DetailedHTMLProps<
@@ -9,9 +9,9 @@ interface PassiveSignaturePadProps {
   signaturePadRef: React.RefObject<SignaturePad>;
 }
 
-export const PassiveSignaturePad: FC<PassiveSignaturePadProps> = ({ 
-  canvasProps, 
-  signaturePadRef 
+export const PassiveSignaturePad: FC<PassiveSignaturePadProps> = ({
+  canvasProps,
+  signaturePadRef,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -20,17 +20,17 @@ export const PassiveSignaturePad: FC<PassiveSignaturePadProps> = ({
     if (!container) return;
 
     const options: AddEventListenerOptions = {
-      passive: true
+      passive: true,
     };
 
     const noop = () => undefined;
 
-    container.addEventListener('touchstart', noop, options);
-    container.addEventListener('touchmove', noop, options);
+    container.addEventListener("touchstart", noop, options);
+    container.addEventListener("touchmove", noop, options);
 
     return () => {
-      container.removeEventListener('touchstart', noop, options);
-      container.removeEventListener('touchmove', noop, options);
+      container.removeEventListener("touchstart", noop, options);
+      container.removeEventListener("touchmove", noop, options);
     };
   }, []);
 

@@ -14,13 +14,13 @@ El sistema utiliza listas diferenciadas de administradores para distintos tipos 
 // Lista para alertas de formulario creado
 export const FORM_CREATED_ADMIN_EMAILS = [
   "hernancalendar01@gmail.com",
-  "luxeprbahia@gmail.com"
+  "luxeprbahia@gmail.com",
 ];
 
 // Lista para notificaciones de formulario completado/firmado
 export const FORM_COMPLETED_ADMIN_EMAILS = [
   "hernancalendar01@gmail.com",
-  "luxeprbahia@gmail.com"
+  "luxeprbahia@gmail.com",
 ];
 ```
 
@@ -32,7 +32,8 @@ Para cambiar la dirección de correo del remitente, edita la constante `DEFAULT_
 
 ```typescript
 // Correo de remitente predeterminado
-export const DEFAULT_SENDER = "Luxe Properties <noreply@mail.luxepropertiespr.com>";
+export const DEFAULT_SENDER =
+  "Luxe Properties <noreply@mail.luxepropertiespr.com>";
 ```
 
 ### Cómo actualizar otras configuraciones

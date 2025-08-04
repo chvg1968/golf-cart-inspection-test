@@ -5,22 +5,23 @@
 // Lista para alertas de formulario creado
 export const FORM_CREATED_ADMIN_EMAILS = [
   "hernancalendar01@gmail.com",
-  "luxeprbahia@gmail.com"
+  "luxeprbahia@gmail.com",
 ];
 
 // Lista para notificaciones de formulario completado/firmado
 export const FORM_COMPLETED_ADMIN_EMAILS = [
   "conradovilla@hotmail.com",
-  "luxeprbahia@gmail.com"
+  "luxeprbahia@gmail.com",
 ];
 
 // Lista general de administradores (para compatibilidad con código existente)
 export const ADMIN_EMAILS = [
-  ...new Set([...FORM_CREATED_ADMIN_EMAILS, ...FORM_COMPLETED_ADMIN_EMAILS])
+  ...new Set([...FORM_CREATED_ADMIN_EMAILS, ...FORM_COMPLETED_ADMIN_EMAILS]),
 ];
 
 // Correo de remitente predeterminado
-export const DEFAULT_SENDER = "Luxe Properties <noreply@mail.luxepropertiespr.com>";
+export const DEFAULT_SENDER =
+  "Luxe Properties <noreply@mail.luxepropertiespr.com>";
 
 // Correo de soporte
 export const SUPPORT_EMAIL = "support@mail.luxepropertiespr.com";
@@ -28,7 +29,7 @@ export const SUPPORT_EMAIL = "support@mail.luxepropertiespr.com";
 // Configuración de URLs
 export const URLS = {
   baseUrl: "https://golf-cart-inspection.netlify.app",
-  supabaseProjectId: "rxudgxowradykfqfwhkp"
+  supabaseProjectId: "rxudgxowradykfqfwhkp",
 };
 
 // Funciones para obtener las listas de administradores

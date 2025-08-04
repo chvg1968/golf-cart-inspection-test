@@ -1,9 +1,8 @@
-
-import { EmailData, EmailContentParams} from "./types.ts";
+import { EmailData, EmailContentParams } from "./types.ts";
 import {
   getDefaultSender,
   getFormCreatedAdminEmails,
-  getFormCompletedAdminEmails
+  getFormCompletedAdminEmails,
 } from "./config.ts";
 
 // Las funciones avanzadas de template de email están exportadas al final de este archivo:
@@ -13,13 +12,19 @@ import {
 // - generarContenidoConfirmacion
 // Puedes importarlas desde otros módulos según el evento de email que necesites.
 
-
 // Función generadora para el evento FORMULARIO_CREADO (correo inicial al guest)
 export function generarContenidoFormularioCreado(
-  data: EmailData
+  data: EmailData,
 ): EmailContentParams {
   // Plantilla personalizada para el primer correo al guest (UNIFICADA)
-  const { guestName, guestEmail, property, inspectionDate, formLinkWithDomain, formLink } = data;
+  const {
+    guestName,
+    guestEmail,
+    property,
+    inspectionDate,
+    formLinkWithDomain,
+    formLink,
+  } = data;
 
   return {
     from: getDefaultSender(),
@@ -47,7 +52,7 @@ export function generarContenidoFormularioCreado(
             ? `<p style='margin-bottom: 20px; word-break: break-all; color: #4a5568;'>${
                 formLinkWithDomain || formLink
               }</p>`
-            : ''
+            : ""
         }
         <div style="margin: 20px 0; padding: 15px; background-color: #f7fafc; border-radius: 5px;">
           <p style="margin-bottom: 10px;"><strong>Property:</strong> ${property}</p>
@@ -63,15 +68,16 @@ export function generarContenidoFormularioCreado(
 
 // Plantilla de alerta para administradores cuando se crea un formulario
 export function generarContenidoAlertaFormularioCreado(
-  data: EmailData
+  data: EmailData,
 ): EmailContentParams {
   const { guestName, guestEmail, property, inspectionDate, adminEmails } = data;
 
   // Obtener la lista de administradores para alertas de formulario creado
   // Usar adminEmails si existe, de lo contrario usar la lista específica
-  const recipients = Array.isArray(adminEmails) && adminEmails.length > 0
-    ? adminEmails.filter((e): e is string => !!e)
-    : getFormCreatedAdminEmails();
+  const recipients =
+    Array.isArray(adminEmails) && adminEmails.length > 0
+      ? adminEmails.filter((e): e is string => !!e)
+      : getFormCreatedAdminEmails();
 
   console.log("Destinatarios de alerta a administradores:", recipients);
 
@@ -93,7 +99,7 @@ export function generarContenidoAlertaFormularioCreado(
 
 // Función generadora para el evento FORMULARIO_FIRMADO (correo a administradores con PDF)
 export function generarContenidoFormularioFirmado(
-  data: EmailData
+  data: EmailData,
 ): EmailContentParams {
   const {
     guestName,
@@ -106,7 +112,10 @@ export function generarContenidoFormularioFirmado(
 
   // Verificar que tenemos datos válidos del huésped
   if (!guestName || !guestEmail) {
-    console.warn("Datos de huésped incompletos en generarContenidoFormularioFirmado:", { guestName, guestEmail });
+    console.warn(
+      "Datos de huésped incompletos en generarContenidoFormularioFirmado:",
+      { guestName, guestEmail },
+    );
   }
 
   return {
@@ -142,9 +151,9 @@ export function generarContenidoFormularioFirmado(
 
 // Función generadora para el evento CONFIRMACION (correo al guest confirmando que firmó)
 export function generarContenidoConfirmacion(
-  data: EmailData
+  data: EmailData,
 ): EmailContentParams {
-  const { guestName, guestEmail, property, inspectionDate} = data;
+  const { guestName, guestEmail, property, inspectionDate } = data;
   const isAdmin = !!data.isAdmin; // Convertir a booleano explícito
 
   // Si NO es admin (es guest), enviar correo sin enlace al PDF
@@ -170,7 +179,6 @@ export function generarContenidoConfirmacion(
       `,
     };
   } else {
-
     return {
       from: getDefaultSender(),
       to: getFormCompletedAdminEmails(),

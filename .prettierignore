@@ -1,0 +1,25 @@
+# Build outputs
+dist/
+build/
+
+# Dependencies
+node_modules/
+
+# History files
+.history/
+
+# Configuration files
+package-lock.json
+yarn.lock
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# Generated files
+*.min.js
+*.min.css
+
+# Supabase generated
+supabase/functions/_shared/bcrypts.ts

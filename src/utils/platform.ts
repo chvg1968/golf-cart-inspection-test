@@ -5,5 +5,5 @@ export const isIOS = (): boolean => {
 
 export const isSafari = (): boolean => {
   const userAgent = window.navigator.userAgent.toLowerCase();
-  return userAgent.includes('safari') && !userAgent.includes('chrome');
+  return userAgent.includes("safari") && !userAgent.includes("chrome");
 };

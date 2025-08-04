@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import '../styles/orientation-warning.css';
+import React, { useEffect, useState } from "react";
+import "../styles/orientation-warning.css";
 
 /**
  * Shows a warning if the device is in portrait mode and screen is small.
@@ -14,15 +14,15 @@ const OrientationWarning: React.FC = () => {
 
   useEffect(() => {
     function handleOrientationChange() {
-      const isPortrait = window.matchMedia('(orientation: portrait)').matches;
+      const isPortrait = window.matchMedia("(orientation: portrait)").matches;
       setShow(isPortrait);
     }
     handleOrientationChange();
-    window.addEventListener('resize', handleOrientationChange);
-    window.addEventListener('orientationchange', handleOrientationChange);
+    window.addEventListener("resize", handleOrientationChange);
+    window.addEventListener("orientationchange", handleOrientationChange);
     return () => {
-      window.removeEventListener('resize', handleOrientationChange);
-      window.removeEventListener('orientationchange', handleOrientationChange);
+      window.removeEventListener("resize", handleOrientationChange);
+      window.removeEventListener("orientationchange", handleOrientationChange);
     };
   }, []);
 

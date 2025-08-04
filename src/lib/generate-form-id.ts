@@ -7,9 +7,9 @@
 export function generateFormId(guestName: string): string {
   // Obtener iniciales del nombre del invitado
   const initials = guestName
-    .split(' ')
-    .map(part => part.charAt(0))
-    .join('')
+    .split(" ")
+    .map((part) => part.charAt(0))
+    .join("")
     .toUpperCase();
 
   // Generar número aleatorio de 4 dígitos
