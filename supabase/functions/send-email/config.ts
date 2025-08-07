@@ -5,14 +5,14 @@
 // Lista para alertas de formulario creado
 export const FORM_CREATED_ADMIN_EMAILS = [
   "hernancalendar01@gmail.com",
-  "julialuxepr@gmail.com",
+  "julieluxepr@gmail.com",
   "luxeprbahia@gmail.com"
 ];
 
 // Lista para notificaciones de formulario completado/firmado
 export const FORM_COMPLETED_ADMIN_EMAILS = [
   "conradovilla@hotmail.com",
-  "julialuxepr@gmail.com",
+  "julieluxepr@gmail.com",
   "luxeprbahia@gmail.com"
 ];
 
