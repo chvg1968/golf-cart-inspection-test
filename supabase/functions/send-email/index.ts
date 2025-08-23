@@ -15,7 +15,7 @@ const ALLOWED_ORIGINS = [
   "http://127.0.0.1:5173", // Otra variante de localhost
   "http://127.0.0.1:5174", // Otro puerto de localhost
   "http://127.0.0.1:60943", // Origen de la vista previa
-  "https://golf-cart-inspection.netlify.app", // Producción
+  "https://golf.luxepropertiespr.com/", // Producción
   "https://www.luxepropertiespr.com", // Dominio de producción
   "https://golfcartinspectiontest.netlify.app", // Nuevo dominio de prueba
 ];

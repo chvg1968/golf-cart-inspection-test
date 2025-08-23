@@ -36,7 +36,7 @@ export class InspectionService {
    * Constante para la URL base de la aplicación
    */
   private static readonly BASE_URL =
-    import.meta.env.VITE_APP_URL || "https://golf-cart-inspection.netlify.app";
+    import.meta.env.VITE_APP_URL || "https://golf.luxepropertiespr.com/";
   /**
    * Crea un nuevo formulario de inspección con un enlace persistente
    */

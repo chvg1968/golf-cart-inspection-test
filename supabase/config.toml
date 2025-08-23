@@ -2,8 +2,8 @@
 port = 54323
 
 [auth]
-site_url = "https://golf-cart-inspection.netlify.app/"
-additional_redirect_urls = ["https://golf-cart-inspection.netlify.app/"]
+site_url = "https://golf.luxepropertiespr.com/"
+additional_redirect_urls = ["https://golf.luxepropertiespr.com/"]
 
 [functions]
 [functions.verify_jwt]

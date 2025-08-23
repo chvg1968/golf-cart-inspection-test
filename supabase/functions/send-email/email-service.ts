@@ -211,7 +211,7 @@ export class EmailService {
 
   private generateFormLink(params: EmailServiceParams): string {
     // Generar un link basado en los parámetros disponibles
-    const baseUrl = "https://golf-cart-inspection.netlify.app";
+    const baseUrl = "https://golf.luxepropertiespr.com/";
 
     // Si ya tenemos un formId (enlace persistente), usarlo directamente
     if (params.formId) {
