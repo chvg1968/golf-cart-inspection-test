@@ -15,14 +15,27 @@ const OrientationWarning: React.FC = () => {
   useEffect(() => {
     function handleOrientationChange() {
       const isPortrait = window.matchMedia("(orientation: portrait)").matches;
-      setShow(isPortrait);
+      const isSmallScreen = window.innerWidth < 768; // Solo mostrar en pantallas pequeñas
+      setShow(isPortrait && isSmallScreen);
     }
+    
+    // Verificar inmediatamente
     handleOrientationChange();
-    window.addEventListener("resize", handleOrientationChange);
-    window.addEventListener("orientationchange", handleOrientationChange);
+    
+    // Agregar listeners con debounce para evitar múltiples llamadas
+    let timeoutId: NodeJS.Timeout;
+    const debouncedHandler = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(handleOrientationChange, 100);
+    };
+    
+    window.addEventListener("resize", debouncedHandler);
+    window.addEventListener("orientationchange", debouncedHandler);
+    
     return () => {
-      window.removeEventListener("resize", handleOrientationChange);
-      window.removeEventListener("orientationchange", handleOrientationChange);
+      clearTimeout(timeoutId);
+      window.removeEventListener("resize", debouncedHandler);
+      window.removeEventListener("orientationchange", debouncedHandler);
     };
   }, []);
 

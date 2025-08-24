@@ -11,7 +11,7 @@ import {
 import * as AirtableService from "../components/AirtableService";
 import { generateFormPDF } from "../components/PDFGenerator";
 import { PROPERTIES } from "../types";
-import { isIOS, isSafari } from "../utils/platform";
+import { useIOSDownload } from "./useIOSDownload";
 
 interface UsePersistentFormProps {
   formLink?: string;
@@ -42,6 +42,11 @@ interface UsePersistentFormResult {
   handlePointsChange: (points: Point[]) => void;
   clearSignature: () => void;
   handleSubmit: (e: React.FormEvent) => Promise<void>;
+  // Nuevas propiedades para manejo de iOS
+  showIOSInstructions: boolean;
+  hideIOSInstructions: () => void;
+  openPDF: () => void;
+  isIOSDevice: boolean;
 }
 
 export function usePersistentForm({
@@ -67,6 +72,29 @@ export function usePersistentForm({
   const formRef = useRef<HTMLFormElement>(null);
   const formContentRef = useRef<HTMLDivElement>(null);
   const loadingRef = useRef(false);
+
+  // Hook para manejar descargas en iOS
+  const {
+    downloadFile,
+    isDownloading: isDownloadingPDF,
+    showInstructions,
+    hideInstructions,
+    openPDF,
+    isIOS,
+  } = useIOSDownload({
+    onSuccess: () => {
+      setNotification({
+        type: "success",
+        message: "PDF descargado correctamente",
+      });
+    },
+    onError: (error) => {
+      setNotification({
+        type: "error",
+        message: `Error al descargar PDF: ${error.message}`,
+      });
+    },
+  });
 
   // Cargar formulario persistente desde la base de datos
   const loadPersistentForm = useCallback(
@@ -256,6 +284,12 @@ export function usePersistentForm({
         return;
       }
 
+      // Mostrar notificación de procesamiento
+      setNotification({
+        type: "success",
+        message: "Procesando formulario y generando PDF...",
+      });
+
       // Generar PDF
       const pdfData = await generateFormPDF({
         contentRef: formContentRef,
@@ -286,54 +320,14 @@ export function usePersistentForm({
 
       const pdfFilename = `${safeProperty}_${safeGuestName}_${safeDate}.pdf`;
 
-      // Descargar el PDF localmente con soporte para iOS
-      const downloadPdfLocally = (): Promise<void> => {
-        return new Promise((resolve, reject) => {
-          try {
-            if (isIOS() && isSafari()) {
-              // En iOS Safari, abrimos el PDF en una nueva pestaña
-              // Esto permite al usuario usar el menú nativo de compartir/guardar
-              const reader = new FileReader();
-              reader.onload = function () {
-                const dataUrl = reader.result as string;
-                // Abrir en nueva pestaña para permitir al usuario guardar/compartir
-                window.open(dataUrl, "_blank");
-                resolve();
-              };
-              reader.onerror = function (error) {
-                console.error("Error al leer el PDF:", error);
-                reject(error);
-              };
-              reader.readAsDataURL(pdfBlob);
-            } else {
-              // Para otros dispositivos, usar el método tradicional
-              const downloadUrl = URL.createObjectURL(pdfBlob);
-              const a = document.createElement("a");
-              a.href = downloadUrl;
-              a.download = pdfFilename;
-              document.body.appendChild(a);
+      // Descargar el PDF usando el hook especializado
+      const downloadResult = await downloadFile(pdfBlob, pdfFilename);
 
-              a.click();
-              resolve();
-
-              // Limpieza después de un tiempo
-              setTimeout(() => {
-                document.body.removeChild(a);
-                URL.revokeObjectURL(downloadUrl);
-              }, 10000);
-            }
-          } catch (downloadError) {
-            console.error(
-              "Error durante la descarga local del PDF:",
-              downloadError,
-            );
-            reject(downloadError);
-          }
-        });
-      };
-
-      // Intentar descargar el PDF localmente y esperar que se inicie
-      await downloadPdfLocally();
+      // Actualizar notificación basada en el resultado
+      setNotification({
+        type: downloadResult.success ? "success" : "warning",
+        message: downloadResult.message,
+      });
 
       // Continuamos con el resto de operaciones después de la descarga
       const pdfUrl = await uploadPDF(pdfBlob, pdfFilename);
@@ -407,15 +401,22 @@ export function usePersistentForm({
         skipAdminAlert: true,
       });
 
-      // Mostrar notificación de éxito
-      setNotification({
-        type: "success",
-        message: "¡Formulario enviado exitosamente!",
-      });
+      // Mostrar notificación final de éxito
+      setTimeout(() => {
+        setNotification({
+          type: "success",
+          message: "¡Formulario enviado exitosamente!",
+        });
+      }, 1000);
 
-      // La navegación a '/thank-you' ahora ocurre después de todas las operaciones de red.
-      // La descarga del PDF fue iniciada, y la limpieza de su URL se retrasó.
-      navigate("/thank-you");
+      // Retrasar la navegación para dar tiempo al usuario de interactuar con el PDF
+      // Especialmente importante en iOS donde el proceso puede requerir interacción manual
+      setTimeout(
+        () => {
+          navigate("/thank-you");
+        },
+        downloadResult.needsManualAction ? 4000 : 2000,
+      );
     } catch (error) {
       console.error("Error al enviar el formulario:", error);
       setError("Error al enviar el formulario. Por favor, intente nuevamente.");
@@ -445,5 +446,10 @@ export function usePersistentForm({
     handlePointsChange,
     clearSignature,
     handleSubmit,
+    // Nuevas propiedades para manejo de iOS
+    showIOSInstructions: showInstructions,
+    hideIOSInstructions: hideInstructions,
+    openPDF,
+    isIOSDevice: isIOS,
   };
 }
