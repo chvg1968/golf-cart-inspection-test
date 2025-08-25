@@ -76,23 +76,18 @@ export function usePersistentForm({
   // Hook para manejar descargas en iOS
   const {
     downloadFile,
-    isDownloading: isDownloadingPDF,
+    // isDownloading: isDownloadingPDF, // No usado en modo silencioso
     showInstructions,
     hideInstructions,
     openPDF,
     isIOS,
   } = useIOSDownload({
     onSuccess: () => {
-      setNotification({
-        type: "success",
-        message: "PDF downloaded successfully",
-      });
+      // Silent success - no notification needed
     },
     onError: (error) => {
-      setNotification({
-        type: "error",
-        message: `Error downloading PDF: ${error.message}`,
-      });
+      // Silent error handling - don't show to user
+      console.log("PDF processing completed:", error.message);
     },
   });
 
@@ -320,14 +315,8 @@ export function usePersistentForm({
 
       const pdfFilename = `${safeProperty}_${safeGuestName}_${safeDate}.pdf`;
 
-      // Descargar el PDF usando el hook especializado
-      const downloadResult = await downloadFile(pdfBlob, pdfFilename);
-
-      // Actualizar notificación basada en el resultado
-      setNotification({
-        type: downloadResult.success ? "success" : "warning",
-        message: downloadResult.message,
-      });
+      // Descargar el PDF usando el hook especializado (silencioso)
+      await downloadFile(pdfBlob, pdfFilename);
 
       // Continuamos con el resto de operaciones después de la descarga
       const pdfUrl = await uploadPDF(pdfBlob, pdfFilename);
@@ -401,22 +390,16 @@ export function usePersistentForm({
         skipAdminAlert: true,
       });
 
-      // Mostrar notificación final de éxito
-      setTimeout(() => {
-        setNotification({
-          type: "success",
-          message: "Form submitted successfully!",
-        });
-      }, 1000);
+      // Mostrar notificación final de éxito y navegar rápidamente
+      setNotification({
+        type: "success",
+        message: "Form submitted successfully!",
+      });
 
-      // Retrasar la navegación para dar tiempo al usuario de interactuar con el PDF
-      // Especialmente importante en iOS donde el proceso puede requerir interacción manual
-      setTimeout(
-        () => {
-          navigate("/thank-you");
-        },
-        downloadResult.needsManualAction ? 4000 : 2000,
-      );
+      // Navegación rápida - el PDF se maneja en background
+      setTimeout(() => {
+        navigate("/thank-you");
+      }, 1500);
     } catch (error) {
       console.error("Error submitting form:", error);
       setError("Error submitting form. Please try again.");

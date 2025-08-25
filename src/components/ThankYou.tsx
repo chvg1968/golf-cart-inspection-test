@@ -11,17 +11,9 @@ export function ThankYou() {
             </svg>
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-4">Thank You!</h1>
-          <p className="text-gray-600 mb-4">
-            Your inspection form has been submitted successfully.
+          <p className="text-gray-600 mb-6">
+            Thank you for your submission. You will receive a confirmation email shortly.
           </p>
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
-            <p className="font-medium mb-2">Next steps:</p>
-            <ul className="text-left space-y-1">
-              <li>• You will receive a confirmation email</li>
-              <li>• The PDF has been saved in our system</li>
-              <li>• If you're on iOS and it didn't download automatically, check if it opened in a new tab</li>
-            </ul>
-          </div>
         </div>
         <button 
           type="button"
