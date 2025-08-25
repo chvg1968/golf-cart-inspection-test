@@ -10,24 +10,25 @@ export function ThankYou() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
             </svg>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">¡Gracias!</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">Thank You!</h1>
           <p className="text-gray-600 mb-4">
-            Su formulario de inspección ha sido enviado exitosamente.
+            Your inspection form has been submitted successfully.
           </p>
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
-            <p className="font-medium mb-2">Próximos pasos:</p>
+            <p className="font-medium mb-2">Next steps:</p>
             <ul className="text-left space-y-1">
-              <li>• Recibirá un correo de confirmación</li>
-              <li>• El PDF ha sido guardado en nuestro sistema</li>
-              <li>• Si está en iOS y no se descargó automáticamente, revise si se abrió en una nueva pestaña</li>
+              <li>• You will receive a confirmation email</li>
+              <li>• The PDF has been saved in our system</li>
+              <li>• If you're on iOS and it didn't download automatically, check if it opened in a new tab</li>
             </ul>
           </div>
         </div>
         <button 
+          type="button"
           onClick={() => window.location.href = '/'}
           className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
         >
-          Volver al inicio
+          Back to Home
         </button>
       </div>
     </div>

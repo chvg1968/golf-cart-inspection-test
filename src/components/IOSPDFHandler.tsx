@@ -39,19 +39,19 @@ export const IOSPDFHandler: React.FC<IOSPDFHandlerProps> = ({
           const newWindow = window.open(dataUrl, "_blank");
           
           if (!newWindow) {
-            // Si fue bloqueado, mostrar instrucciones
+            // If blocked, show instructions
             setShowInstructions(true);
           } else {
-            // Si se abrió, dar instrucciones sobre cómo guardar
+            // If opened, give instructions on how to save
             setTimeout(() => {
               alert(
-                "PDF abierto en nueva pestaña. Use el botón 'Compartir' (cuadrado con flecha hacia arriba) para guardarlo en su dispositivo."
+                "PDF opened in new tab. Use the 'Share' button (square with arrow pointing up) to save it to your device."
               );
               onComplete();
             }, 1000);
           }
         } else {
-          // Para otros navegadores en iOS
+          // For other browsers on iOS
           setShowInstructions(true);
         }
       };
@@ -73,17 +73,17 @@ export const IOSPDFHandler: React.FC<IOSPDFHandlerProps> = ({
               </svg>
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">
-              Preparando descarga del PDF
+              Preparing PDF Download
             </h3>
             <p className="text-sm text-gray-600">
-              Configurando la descarga para su dispositivo iOS...
+              Setting up download for your iOS device...
             </p>
           </div>
           <button
             onClick={handleIOSDownload}
             className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700"
           >
-            Descargar PDF
+            Download PDF
           </button>
         </div>
       </div>
@@ -100,17 +100,17 @@ export const IOSPDFHandler: React.FC<IOSPDFHandlerProps> = ({
             </svg>
           </div>
           <h3 className="text-lg font-medium text-gray-900 mb-2">
-            Instrucciones para iOS
+            iOS Instructions
           </h3>
         </div>
         
         <div className="space-y-3 text-sm text-gray-600 mb-6">
-          <p className="font-medium">Para guardar el PDF en su iPhone/iPad:</p>
+          <p className="font-medium">To save the PDF on your iPhone/iPad:</p>
           <ol className="list-decimal list-inside space-y-2">
-            <li>Toque el enlace de descarga abajo</li>
-            <li>Se abrirá el PDF en una nueva pestaña</li>
-            <li>Toque el botón "Compartir" (cuadrado con flecha)</li>
-            <li>Seleccione "Guardar en Archivos" o "Guardar en Fotos"</li>
+            <li>Tap the download link below</li>
+            <li>The PDF will open in a new tab</li>
+            <li>Tap the "Share" button (square with arrow)</li>
+            <li>Select "Save to Files" or "Save to Photos"</li>
           </ol>
         </div>
 
@@ -122,14 +122,14 @@ export const IOSPDFHandler: React.FC<IOSPDFHandlerProps> = ({
               rel="noopener noreferrer"
               className="block w-full bg-blue-600 text-white py-2 px-4 rounded-md text-center hover:bg-blue-700"
             >
-              📄 Abrir PDF
+              📄 Open PDF
             </a>
           )}
           <button
             onClick={onComplete}
             className="w-full bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400"
           >
-            Continuar sin descargar
+            Continue without downloading
           </button>
         </div>
       </div>

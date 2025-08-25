@@ -26,7 +26,7 @@ export const useIOSDownload = (options: UseIOSDownloadOptions = {}) => {
 
     try {
       if (!isIOS()) {
-        // Descarga normal para otros dispositivos
+        // Normal download for other devices
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
@@ -41,11 +41,11 @@ export const useIOSDownload = (options: UseIOSDownloadOptions = {}) => {
         return {
           success: true,
           needsManualAction: false,
-          message: "Descarga iniciada correctamente"
+          message: "Download started successfully"
         };
       }
 
-      // Manejo específico para iOS
+      // iOS-specific handling
       const browser = getIOSBrowser();
       const reader = new FileReader();
       
@@ -55,46 +55,46 @@ export const useIOSDownload = (options: UseIOSDownloadOptions = {}) => {
           setDownloadUrl(dataUrl);
 
           if (browser === 'safari') {
-            // En Safari, intentar abrir en nueva pestaña
+            // In Safari, try to open in new tab
             const newWindow = window.open(dataUrl, "_blank");
             
             if (newWindow) {
-              // Éxito - PDF abierto en nueva pestaña
+              // Success - PDF opened in new tab
               setTimeout(() => {
                 options.onSuccess?.();
                 resolve({
                   success: true,
                   needsManualAction: true,
-                  message: "PDF abierto en nueva pestaña. Use el botón 'Compartir' para guardarlo."
+                  message: "PDF opened in new tab. Use the 'Share' button to save it."
                 });
               }, 500);
             } else {
-              // Bloqueado - mostrar instrucciones
+              // Blocked - show instructions
               setShowInstructions(true);
               resolve({
                 success: false,
                 needsManualAction: true,
-                message: "Popup bloqueado. Siga las instrucciones para descargar manualmente."
+                message: "Popup blocked. Follow the instructions to download manually."
               });
             }
           } else {
-            // Para Chrome/Firefox en iOS, mostrar instrucciones directamente
+            // For Chrome/Firefox on iOS, show instructions directly
             setShowInstructions(true);
             resolve({
               success: false,
               needsManualAction: true,
-              message: "Descarga manual requerida en este navegador."
+              message: "Manual download required in this browser."
             });
           }
         };
 
         reader.onerror = function (error) {
           console.error("Error reading blob:", error);
-          options.onError?.(new Error("Error al procesar el archivo"));
+          options.onError?.(new Error("Error processing file"));
           resolve({
             success: false,
             needsManualAction: false,
-            message: "Error al procesar el archivo"
+            message: "Error processing file"
           });
         };
 
@@ -103,13 +103,13 @@ export const useIOSDownload = (options: UseIOSDownloadOptions = {}) => {
 
     } catch (error) {
       console.error("Download error:", error);
-      const errorMessage = error instanceof Error ? error.message : "Error desconocido";
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
       options.onError?.(new Error(errorMessage));
       
       return {
         success: false,
         needsManualAction: false,
-        message: `Error durante la descarga: ${errorMessage}`
+        message: `Error during download: ${errorMessage}`
       };
     } finally {
       setIsDownloading(false);

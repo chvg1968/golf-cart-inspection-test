@@ -76,7 +76,7 @@ const PersistentFormHandler: React.FC = () => {
             href="/"
             className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 inline-block"
           >
-            Volver al inicio
+            Back to Home
           </a>
         </div>
       </>
@@ -88,16 +88,15 @@ const PersistentFormHandler: React.FC = () => {
       <>
         {orientationWarning}
         <div className="p-6 max-w-lg mx-auto bg-white rounded-lg shadow-md">
-          <h2 className="text-xl font-bold mb-4">Formulario no encontrado</h2>
+          <h2 className="text-xl font-bold mb-4">Form Not Found</h2>
           <p className="text-gray-700 mb-4">
-            No se pudo encontrar el formulario solicitado. Es posible que el
-            enlace sea incorrecto o haya expirado.
+            The requested form could not be found. The link may be incorrect or expired.
           </p>
           <a
             href="/"
             className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 inline-block"
           >
-            Volver al inicio
+            Back to Home
           </a>
         </div>
       </>
@@ -132,32 +131,34 @@ const PersistentFormHandler: React.FC = () => {
                 </svg>
               </div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">
-                Instrucciones para iOS
+                iOS Instructions
               </h3>
             </div>
             
             <div className="space-y-3 text-sm text-gray-600 mb-6">
-              <p className="font-medium">Para guardar el PDF en su iPhone/iPad:</p>
+              <p className="font-medium">To save the PDF on your iPhone/iPad:</p>
               <ol className="list-decimal list-inside space-y-2">
-                <li>Toque el botón "Abrir PDF" abajo</li>
-                <li>Se abrirá el PDF en una nueva pestaña</li>
-                <li>Toque el botón "Compartir" (cuadrado con flecha hacia arriba)</li>
-                <li>Seleccione "Guardar en Archivos" o "Guardar en Fotos"</li>
+                <li>Tap the "Open PDF" button below</li>
+                <li>The PDF will open in a new tab</li>
+                <li>Tap the "Share" button (square with arrow pointing up)</li>
+                <li>Select "Save to Files" or "Save to Photos"</li>
               </ol>
             </div>
 
             <div className="space-y-3">
               <button
+                type="button"
                 onClick={openPDF}
                 className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700"
               >
-                📄 Abrir PDF
+                📄 Open PDF
               </button>
               <button
+                type="button"
                 onClick={hideIOSInstructions}
                 className="w-full bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400"
               >
-                Continuar
+                Continue
               </button>
             </div>
           </div>
@@ -202,7 +203,7 @@ const PersistentFormHandler: React.FC = () => {
               />
             ) : (
               <div className="text-center text-gray-500">
-                Cargando diagrama...
+                Loading diagram...
               </div>
             )}
 

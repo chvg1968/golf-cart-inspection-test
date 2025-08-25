@@ -85,13 +85,13 @@ export function usePersistentForm({
     onSuccess: () => {
       setNotification({
         type: "success",
-        message: "PDF descargado correctamente",
+        message: "PDF downloaded successfully",
       });
     },
     onError: (error) => {
       setNotification({
         type: "error",
-        message: `Error al descargar PDF: ${error.message}`,
+        message: `Error downloading PDF: ${error.message}`,
       });
     },
   });
@@ -113,7 +113,7 @@ export function usePersistentForm({
         );
 
         if (!form) {
-          setError("El formulario solicitado no existe o ha expirado");
+          setError("The requested form does not exist or has expired");
           setIsLoading(false);
           return;
         }
@@ -162,7 +162,7 @@ export function usePersistentForm({
       } catch (error) {
         console.error("Error loading persistent form:", error);
         setError(
-          "Error al cargar el formulario. Por favor, intente nuevamente.",
+          "Error loading the form. Please try again.",
         );
       } finally {
         setIsLoading(false);
@@ -270,7 +270,7 @@ export function usePersistentForm({
     e.preventDefault();
 
     if (!formData || !formLink) {
-      setError("No hay datos de formulario para enviar");
+      setError("No form data available to submit");
       return;
     }
 
@@ -279,7 +279,7 @@ export function usePersistentForm({
     try {
       // Validar firma
       if (signaturePadRef.current?.isEmpty()) {
-        setError("Por favor, firme el formulario antes de enviarlo");
+        setError("Please sign the form before submitting");
         setIsSending(false);
         return;
       }
@@ -287,7 +287,7 @@ export function usePersistentForm({
       // Mostrar notificación de procesamiento
       setNotification({
         type: "success",
-        message: "Procesando formulario y generando PDF...",
+        message: "Processing form and generating PDF...",
       });
 
       // Generar PDF
@@ -297,12 +297,12 @@ export function usePersistentForm({
       });
 
       if (!pdfData || !pdfData.download || !pdfData.download.blob) {
-        throw new Error("Error al generar el PDF o el blob está vacío.");
+        throw new Error("Error generating PDF or blob is empty.");
       }
 
       const pdfBlob = pdfData.download.blob;
       if (pdfBlob.size === 0) {
-        throw new Error("El blob del PDF está vacío.");
+        throw new Error("PDF blob is empty.");
       }
 
       // Generar nombre de archivo seguro reemplazando caracteres especiales
@@ -333,7 +333,7 @@ export function usePersistentForm({
       const pdfUrl = await uploadPDF(pdfBlob, pdfFilename);
 
       if (!pdfUrl) {
-        throw new Error("Error al subir el PDF");
+        throw new Error("Error uploading PDF");
       }
 
       // Actualizar el formulario en la base de datos
@@ -405,7 +405,7 @@ export function usePersistentForm({
       setTimeout(() => {
         setNotification({
           type: "success",
-          message: "¡Formulario enviado exitosamente!",
+          message: "Form submitted successfully!",
         });
       }, 1000);
 
@@ -418,8 +418,8 @@ export function usePersistentForm({
         downloadResult.needsManualAction ? 4000 : 2000,
       );
     } catch (error) {
-      console.error("Error al enviar el formulario:", error);
-      setError("Error al enviar el formulario. Por favor, intente nuevamente.");
+      console.error("Error submitting form:", error);
+      setError("Error submitting form. Please try again.");
     } finally {
       setIsSending(false);
     }
