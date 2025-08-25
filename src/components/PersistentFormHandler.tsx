@@ -10,21 +10,21 @@ import { PropertyInfoAdapter } from "./adapters/PropertyInfoAdapter";
 import { IOSDebugInfo } from "./IOSDebugInfo";
 
 /**
- * Componente para manejar formularios persistentes
- * Este componente carga un formulario por su enlace persistente
- * y lo muestra al usuario, sin depender de JWT
+ * Component for handling persistent forms
+ * This component loads a form by its persistent link
+ * and shows it to the user, without depending on JWT
  */
 const PersistentFormHandler: React.FC = () => {
   const { formLink } = useParams<{ formLink: string }>();
 
-  // Usar el hook personalizado para manejar el formulario persistente
+  // Use the custom hook to handle the persistent form
   const {
     formData,
     isLoading,
     isSending,
     error,
     selectedProperty,
-    // No necesitamos diagramPoints directamente en este componente
+    // We don't need diagramPoints directly in this component
     diagramHistory,
     currentStep,
     notification,
@@ -39,20 +39,16 @@ const PersistentFormHandler: React.FC = () => {
     handlePointsChange,
     clearSignature,
     handleSubmit,
-    // Propiedades para iOS (no utilizadas en modo silencioso)
-    // showIOSInstructions,
-    // hideIOSInstructions,
-    // openPDF,
-    // isIOSDevice,
+    // We no longer need iOS specific properties
   } = usePersistentForm({ formLink });
 
-  // Mostrar advertencia de orientación en móviles
-  // Esto asegura que el mensaje se muestre también en el flujo del cliente
-  // y mantiene la UI consistente
+  // Show orientation warning on mobile devices
+  // This ensures that the message is also shown in the client flow
+  // and keeps the UI consistent
 
-  // Renderiza la advertencia de orientación SIEMPRE en la pantalla de formulario persistente
-  // (antes de cualquier return condicional)
-  // Esto permite que el mensaje se muestre correctamente en móviles y simuladores
+  // Render the orientation warning ALWAYS on the persistent form screen
+  // (before any conditional return)
+  // This allows the message to be shown correctly on mobile devices and simulators
 
   const orientationWarning = <OrientationWarning />;
 
@@ -90,7 +86,8 @@ const PersistentFormHandler: React.FC = () => {
         <div className="p-6 max-w-lg mx-auto bg-white rounded-lg shadow-md">
           <h2 className="text-xl font-bold mb-4">Form Not Found</h2>
           <p className="text-gray-700 mb-4">
-            The requested form could not be found. The link may be incorrect or expired.
+            The requested form could not be found. The link may be incorrect or
+            expired.
           </p>
           <a
             href="/"
@@ -108,19 +105,17 @@ const PersistentFormHandler: React.FC = () => {
       {notification && (
         <div
           className={`fixed top-4 right-4 p-4 rounded-lg shadow-lg z-40 ${
-            notification.type === "success" 
-              ? "bg-green-100 text-green-800" 
+            notification.type === "success"
+              ? "bg-green-100 text-green-800"
               : notification.type === "warning"
-              ? "bg-yellow-100 text-yellow-800"
-              : "bg-red-100 text-red-800"
+                ? "bg-yellow-100 text-yellow-800"
+                : "bg-red-100 text-red-800"
           }`}
           role="alert"
         >
           {notification.message}
         </div>
       )}
-
-
 
       <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-lg p-8">
         <div ref={formContentRef}>
@@ -181,14 +176,14 @@ const PersistentFormHandler: React.FC = () => {
                 disabled={isSending}
                 className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isSending ? "Processing..." : "Sign and Download PDF"}
+                {isSending ? "Processing..." : "Sign and Submit"}
               </button>
             </div>
           </form>
         </div>
       </div>
-      
-      {/* Componente de debug solo visible en iOS */}
+
+      {/* Debug component only visible on iOS */}
       <IOSDebugInfo />
     </div>
   );

@@ -140,7 +140,7 @@ function InspectionForm() {
                   {isSending
                     ? "Processing..."
                     : isGuestView
-                      ? "Sign and Download PDF"
+                      ? "Sign and Submit"
                       : "Send to Guest"}
                 </button>
               </div>
@@ -173,8 +173,9 @@ function App() {
         />
 
         {/* Rutas Protegidas (solo para administradores autenticados) */}
-        {/* Ruta pública para la página de agradecimiento */}
+        {/* Rutas públicas para la página de agradecimiento */}
         <Route path="/thank-you" element={<ThankYou />} />
+        <Route path="/thank-you/:id" element={<ThankYou />} />
 
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<InspectionForm />} />
