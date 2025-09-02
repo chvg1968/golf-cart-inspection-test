@@ -168,6 +168,11 @@ export function generarContenidoConfirmacion(
           <h2 style="color: #2c5282; margin-bottom: 20px;">Inspection Completed</h2>
           <p style="margin-bottom: 15px;">Dear ${guestName},</p>
           <p style="margin-bottom: 20px;">Thank you for completing the inspection form for the golf cart at ${property}. Your submission has been received.</p>
+          <p style="margin-bottom: 20px;"> Your SMS consent has been recorded. You have agreed to receive essential SMS notifications from Luxe Properties (such as inspection forms and access reminders). Reply STOP to opt out at any time.</p>
+          <p style="color: #888; font-size: 12px;">
+          This confirmation is sent in compliance with messaging regulations. SMS consent applies only to your current reservation. 
+          No marketing or promotional messages will be sent.
+          </p>
           <div style="margin: 20px 0; padding: 15px; background-color: #f7fafc; border-radius: 5px;">
             <p style="margin-bottom: 10px;"><strong>Property:</strong> ${property}</p>
             <p style="margin-bottom: 10px;"><strong>Inspection Date:</strong> ${inspectionDate}</p>
