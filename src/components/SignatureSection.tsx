@@ -84,11 +84,12 @@ export function SignatureSection({
           <label htmlFor="terms-checkbox" className="flex items-center space-x-2">
             <input
               type="checkbox"
-              id="terms-checkbox"
-              name="termsAccepted"
+              id="sms-consent"
+              name="sms_consent"
               // Estado local para el checkbox
-              checked={localChecked}
-              onChange={() => setLocalChecked((prev) => !prev)}
+              value = "yes"
+              defaultChecked={false}
+              required
             />
             <p className="text-sm text-gray-600">
               I agree to receive SMS from Luxe Properties
